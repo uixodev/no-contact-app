@@ -8,10 +8,12 @@ import { confetti } from './fx.js';
 const $ = (sel) => document.querySelector(sel);
 const fmtMoment = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 const fmtShort = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+const fmtDay = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 const MOOD_WORDS = ['', 'Very low', 'Low', 'Okay', 'Good', 'Great'];
 const MOOD_EMOJI = ['🙂', '😞', '😕', '😐', '🙂', '😄'];
 const RING_LEN = 2 * Math.PI * 112; // matches the r="112" progress ring around the orb
 
+const NOTE_MAX = 2000;                // longest note you can write
 const LOG_PAGE = 14;                 // entries shown at a time in Recent entries
 const LOG_FILTERS = [['all', 'All'], ['held', 'Held'], ['contact', 'Contact'], ['notes', 'With notes']];
 const PEAK_URGE = 8;                 // urge level (0–10) treated as a "peak"
@@ -271,9 +273,8 @@ function renderGoal(today) {
   }));
 }
 
-/** What you picked and wrote today, shown under the "Done" banner. */
-function renderDoneDetails(entry) {
-  const box = $('#doneDetails');
+/** The picked chips, text and note of an entry as HTML, shared by the "Done" card and the reading view. */
+function detailRows(entry, { note = true } = {}) {
   const rows = [];
   const chips = (list, items) => items.length ? `<div class="chip-line">${items.map((v) => `<span class="mini-chip">${esc(labelOf(list, v))}</span>`).join('')}</div>` : '';
   if (entry.triggers?.length) rows.push(`<p class="detail-label">Triggers</p>${chips(TAGS, entry.triggers)}`);
@@ -282,6 +283,14 @@ function renderDoneDetails(entry) {
   if (body.length) rows.push(`<p class="detail-label">Body</p><div class="chip-line">${body.map((t) => `<span class="mini-chip">${esc(t)}</span>`).join('')}</div>`);
   if (entry.good) rows.push(`<p class="detail-label">One good thing</p><p class="detail-text">🌟 ${esc(entry.good)}</p>`);
   if (entry.tomorrow) rows.push(`<p class="detail-label">Tomorrow I will…</p><p class="detail-text">➡️ ${esc(entry.tomorrow)}</p>`);
+  if (note && entry.note) rows.push(`<p class="detail-label">Note</p><p class="detail-text note-text">${esc(entry.note)}</p>`);
+  return rows;
+}
+
+/** What you picked and wrote today, shown under the "Done" banner. */
+function renderDoneDetails(entry) {
+  const box = $('#doneDetails');
+  const rows = detailRows(entry);
   box.innerHTML = rows.join('');
   box.hidden = rows.length === 0;
 }
@@ -364,7 +373,17 @@ function fillForm(entry) {
   updateMoreCounts();
   syncContactRow();
   updateUrgeAlert();
+  autosizeAll();
 }
+
+/** Let a text box grow with what you write (up to 60% of the screen), then scroll inside. */
+function autosize(el) {
+  if (!el || el.getClientRects().length === 0) return; // not visible (e.g. inside a closed section)
+  el.style.height = 'auto';
+  const chrome = el.offsetHeight - el.clientHeight;
+  el.style.height = `${Math.min(el.scrollHeight + chrome, Math.round(innerHeight * 0.6))}px`;
+}
+function autosizeAll() { document.querySelectorAll('#checkinForm textarea.autosize').forEach(autosize); } // a function, so it is ready when startup wires the form
 
 /** The little "2 selected" badges on the collapsible sections. */
 function updateMoreCounts() {
@@ -392,8 +411,8 @@ function buildPicks() {
     const b = Object.assign(document.createElement('button'), { type: 'button', className: 'chip chip-sm', textContent: text });
     b.addEventListener('click', () => {
       const f = $('#checkinForm');
-      f.note.value = `${f.note.value}${f.note.value && !f.note.value.endsWith('\n') ? '\n' : ''}${text} `.slice(0, 500);
-      f.dataset.dirty = '1'; $('#noteCount').textContent = f.note.value.length;
+      f.note.value = `${f.note.value}${f.note.value && !f.note.value.endsWith('\n') ? '\n' : ''}${text} `.slice(0, NOTE_MAX);
+      f.dataset.dirty = '1'; $('#noteCount').textContent = f.note.value.length; autosize(f.note);
       f.note.focus(); f.note.setSelectionRange(f.note.value.length, f.note.value.length);
     });
     return b;
@@ -446,6 +465,10 @@ function renderMilestones(s) {
   }));
 }
 
+const logMatches = (c) => state.logFilter === 'all' || (state.logFilter === 'notes' ? !!(c.note || c.good) : c.status === state.logFilter);
+/** Entries for the current filter, newest first (what Recent entries lists and the reading view pages through). */
+const currentLogList = () => [...state.checkins].reverse().filter(logMatches);
+
 function renderLog() {
   const box = $('#logFilters');
   if (!box.children.length) {
@@ -458,8 +481,7 @@ function renderLog() {
   }
   [...box.children].forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === state.logFilter)));
 
-  const matches = (c) => state.logFilter === 'all' || (state.logFilter === 'notes' ? !!(c.note || c.good) : c.status === state.logFilter);
-  const all = [...state.checkins].reverse().filter(matches);
+  const all = currentLogList();
   const recent = all.slice(0, state.logLimit);
   $('#logEmpty').hidden = recent.length > 0;
   $('#logEmptyTitle').textContent = state.checkins.length ? 'Nothing matches that filter.' : 'No check-ins yet.';
@@ -469,19 +491,20 @@ function renderLog() {
   $('#log').replaceChildren(...recent.map((c) => {
     const li = document.createElement('li');
     li.innerHTML = `
-      <span class="log-dot ${c.status}" aria-hidden="true"></span>
-      <div class="log-main">
-        <div class="log-title"></div>
-        <div class="log-meta"></div>
-        ${c.good ? '<div class="log-good"></div>' : ''}
-        ${c.note ? '<div class="log-note"></div>' : ''}
-      </div>
-      <div class="log-actions">
-        <button class="icon-btn" data-act="edit" aria-label="Edit entry"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></button>
-        <button class="icon-btn" data-act="delete" aria-label="Delete entry"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M5 7h14M10 7V4h4v3m-7 0 1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></button>
-      </div>`;
+      <button class="log-open" type="button">
+        <span class="log-dot ${c.status}" aria-hidden="true"></span>
+        <span class="log-main">
+          <span class="log-title"></span>
+          <span class="log-meta"></span>
+          ${c.good ? '<span class="log-good"></span>' : ''}
+          ${c.note ? '<span class="log-note"></span>' : ''}
+        </span>
+        <span class="log-chev" aria-hidden="true">›</span>
+      </button>`;
+    const status = c.status === 'held' ? 'Held No Contact' : `Had contact${c.time ? ` at ${c.time}` : ''}`;
+    const title = `${fmtShort.format(fromKey(c.date))} · ${status}`;
     li.querySelector('.log-dot').textContent = c.status === 'held' ? '✓' : '✕';
-    li.querySelector('.log-title').textContent = `${fmtShort.format(fromKey(c.date))} · ${c.status === 'held' ? 'Held No Contact' : `Had contact${c.time ? ` at ${c.time}` : ''}`}`;
+    li.querySelector('.log-title').textContent = c.status === 'held' ? fmtShort.format(fromKey(c.date)) : title; // the green ✓ already says "held"
     const meta = [`${MOOD_EMOJI[c.mood] ?? ''} ${MOOD_WORDS[c.mood] ?? '—'}`, `Urge ${c.urge}/10`];
     if (c.sleep != null) meta.push(`😴 ${c.sleep >= 9 ? '9h+' : c.sleep <= 4 ? '≤4h' : `${c.sleep}h`}`);
     if (c.wins?.length) meta.push(`🌟 ${c.wins.length} ${c.wins.length === 1 ? 'win' : 'wins'}`);
@@ -489,10 +512,55 @@ function renderLog() {
     li.querySelector('.log-meta').textContent = meta.join(' · ');
     if (c.good) li.querySelector('.log-good').textContent = `🌟 ${c.good}`;
     if (c.note) li.querySelector('.log-note').textContent = c.note;
-    li.querySelector('[data-act="edit"]').addEventListener('click', () => startEdit(c.date));
-    li.querySelector('[data-act="delete"]').addEventListener('click', () => removeEntry(c.date));
+    const open = li.querySelector('.log-open');
+    open.setAttribute('aria-label', `Read the entry for ${title}${c.note ? ', with a note' : ''}`);
+    open.addEventListener('click', () => openEntry(c.date));
     return li;
   }));
+}
+
+/* ---------------- Reading a past entry ---------------- */
+let entryList = [];
+let entryIdx = -1;
+
+function openEntry(date) {
+  entryList = currentLogList();
+  entryIdx = entryList.findIndex((c) => c.date === date);
+  if (entryIdx < 0) { entryList = [...state.checkins].reverse(); entryIdx = entryList.findIndex((c) => c.date === date); }
+  if (entryIdx < 0) return;
+  renderEntry();
+  $('#entryDialog').showModal();
+}
+
+function renderEntry() {
+  const c = entryList[entryIdx];
+  const rows = detailRows(c, { note: false });
+  $('#entryBody').innerHTML = `
+    <h2 class="entry-date" id="entryTitle" tabindex="-1"></h2>
+    <span class="entry-status ${c.status}"></span>
+    <section class="entry-note-card" aria-label="Note">
+      <p class="detail-label">Note</p>
+      ${c.note ? `<p class="detail-text note-text">${esc(c.note)}</p>` : '<p class="entry-empty">No note for this day.</p>'}
+    </section>
+    <div class="entry-stats">
+      <div class="entry-stat"><span>Mood</span><strong>${MOOD_EMOJI[c.mood] ?? ''} ${esc(MOOD_WORDS[c.mood] ?? '—')}</strong></div>
+      <div class="entry-stat"><span>Urge to reach out</span><strong>${esc(c.urge)}/10</strong></div>
+    </div>
+    ${rows.length ? `<div class="done-details">${rows.join('')}</div>` : ''}`;
+  $('#entryTitle').textContent = fmtDay.format(fromKey(c.date));
+  $('#entryBody .entry-status').textContent = c.status === 'held' ? '✓ Held No Contact' : `✕ Had contact${c.time ? ` at ${c.time}` : ''}`;
+  $('#entryPos').textContent = `${entryIdx + 1} of ${entryList.length}`;
+  $('#entryNewer').disabled = entryIdx === 0;
+  $('#entryOlder').disabled = entryIdx === entryList.length - 1;
+  $('#entryBody').scrollTop = 0;
+}
+
+function stepEntry(delta) {
+  const next = entryIdx + delta;
+  if (next < 0 || next >= entryList.length) return;
+  entryIdx = next;
+  renderEntry();
+  $('#entryTitle').focus({ preventScroll: true });
 }
 
 /** Show the "that's a peak" nudge when the urge slider is high. */
@@ -529,11 +597,12 @@ function startEdit(date) {
 }
 
 async function removeEntry(date) {
-  if (!confirm(`Delete the entry for ${fmtShort.format(fromKey(date))}?`)) return;
+  if (!confirm(`Delete the entry for ${fmtShort.format(fromKey(date))}?`)) return false;
   const backup = state.checkins.find((c) => c.date === date);
   await db.deleteCheckin(date);
   await load(); render();
   toast('Entry deleted', 'Undo', async () => { await db.saveCheckin(backup); await load(); render(); });
+  return true;
 }
 
 async function onCheckinSubmit(e) {
@@ -721,7 +790,21 @@ function bindUI() {
     if ((name === 'sleep' || name === 'energy') && e.target.checked) cf.querySelectorAll(`input[name="${name}"]`).forEach((i) => { if (i !== e.target) i.checked = false; }); // pick one, or none
     updateMoreCounts();
   });
-  cf.note.addEventListener('input', () => { $('#noteCount').textContent = cf.note.value.length; });
+  cf.note.addEventListener('input', () => { $('#noteCount').textContent = cf.note.value.length; autosize(cf.note); });
+  cf.good.addEventListener('input', () => autosize(cf.good));
+  cf.tomorrow.addEventListener('input', () => autosize(cf.tomorrow));
+  cf.addEventListener('toggle', autosizeAll, true);           // sections opening (toggle does not bubble)
+  window.addEventListener('resize', autosizeAll);
+  // reading a past entry
+  $('#entryClose').addEventListener('click', () => $('#entryDialog').close());
+  $('#entryNewer').addEventListener('click', () => stepEntry(-1));
+  $('#entryOlder').addEventListener('click', () => stepEntry(1));
+  $('#entryEdit').addEventListener('click', () => { const { date } = entryList[entryIdx]; $('#entryDialog').close(); startEdit(date); });
+  $('#entryDelete').addEventListener('click', async () => { const { date } = entryList[entryIdx]; if (await removeEntry(date)) $('#entryDialog').close(); });
+  $('#entryDialog').addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); stepEntry(-1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); stepEntry(1); }
+  });
   $('#quickHeldBtn').addEventListener('click', () => cf.requestSubmit());
   $('#logMore').addEventListener('click', () => { state.logLimit += LOG_PAGE; renderLog(); });
   $('#reminderBtn').addEventListener('click', downloadReminder);

@@ -317,13 +317,13 @@
             <details class="more" open>
               <summary><span class="more-ico" aria-hidden="true">✍️</span><span class="more-title">Reflection</span></summary>
               <div class="more-body">
-                <label class="field"><span class="field-label">One good thing today <span class="optional">optional</span></span><input type="text" name="good" maxlength="140" autocomplete="off" placeholder="Even something tiny"></label>
-                <label class="field"><span class="field-label">Tomorrow I will… <span class="optional">optional</span></span><input type="text" name="tomorrow" maxlength="140" autocomplete="off" placeholder="One small plan"></label>
+                <label class="field"><span class="field-label">One good thing today <span class="optional">optional</span></span><textarea name="good" class="autosize" rows="2" maxlength="140" placeholder="Even something tiny"></textarea></label>
+                <label class="field"><span class="field-label">Tomorrow I will… <span class="optional">optional</span></span><textarea name="tomorrow" class="autosize" rows="2" maxlength="140" placeholder="One small plan"></textarea></label>
                 <div class="field">
                   <span class="field-label">Note <span class="optional">optional</span></span>
                   <div class="prompts" id="promptChips" aria-label="Writing prompts"></div>
-                  <textarea name="note" rows="3" maxlength="500" placeholder="What helped today? What was hard?"></textarea>
-                  <span class="field-hint"><output id="noteCount">0</output>/500</span>
+                  <textarea name="note" class="autosize" rows="8" maxlength="2000" placeholder="What helped today? What was hard? Write as much as you like."></textarea>
+                  <span class="field-hint"><output id="noteCount">0</output>/2000</span>
                 </div>
               </div>
             </details>
@@ -475,6 +475,25 @@
       <footer class="rescue-foot">
         <button class="btn btn-ghost" type="button" id="rescueBack">Back</button>
         <button class="btn btn-primary" type="button" id="rescueNext">Continue</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <!-- Read a past entry in full -->
+  <dialog id="entryDialog" class="entry" aria-labelledby="entryTitle">
+    <div class="entry-inner">
+      <header class="entry-top">
+        <button class="icon-btn" type="button" id="entryClose" aria-label="Close entry">✕</button>
+        <div class="entry-nav">
+          <button class="btn btn-ghost btn-sm" type="button" id="entryNewer">‹ Newer</button>
+          <span class="entry-pos" id="entryPos" aria-live="polite"></span>
+          <button class="btn btn-ghost btn-sm" type="button" id="entryOlder">Older ›</button>
+        </div>
+      </header>
+      <div class="entry-body" id="entryBody"></div>
+      <footer class="entry-foot">
+        <button class="btn btn-danger" type="button" id="entryDelete">Delete</button>
+        <button class="btn btn-primary" type="button" id="entryEdit">Edit entry</button>
       </footer>
     </div>
   </dialog>

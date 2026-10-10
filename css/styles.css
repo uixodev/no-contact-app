@@ -114,8 +114,8 @@ button, a, label, [role='button'] { touch-action: manipulation; }
 
 /* Hide the scroll bar on phones and tablets (the page still scrolls; desktop keeps its bar) */
 @media (max-width: 760px), (pointer: coarse) {
-  html, body, dialog, .calendar-wrap, .rescue-body { scrollbar-width: none; -ms-overflow-style: none; }
-  html::-webkit-scrollbar, body::-webkit-scrollbar, dialog::-webkit-scrollbar, .calendar-wrap::-webkit-scrollbar, .rescue-body::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  html, body, dialog, .calendar-wrap, .rescue-body, .entry-body, textarea { scrollbar-width: none; -ms-overflow-style: none; }
+  html::-webkit-scrollbar, body::-webkit-scrollbar, dialog::-webkit-scrollbar, .calendar-wrap::-webkit-scrollbar, .rescue-body::-webkit-scrollbar, .entry-body::-webkit-scrollbar, textarea::-webkit-scrollbar { display: none; width: 0; height: 0; }
 }
 
 .muted { color: var(--color-muted); font-weight: 600; }
@@ -728,3 +728,51 @@ input[type='text']:focus-visible { outline: 0; border-color: var(--green); backg
 .reminder-row .field { flex: 1 1 7rem; }
 .reminder-row .btn { flex: 1 1 12rem; white-space: normal; line-height: 1.2; }
 .wk[data-today='true'] .wk-day { letter-spacing: 0; font-size: .58rem; }
+
+/* ================= Bigger writing fields ================= */
+textarea.autosize { overflow-y: auto; }
+textarea[name='note'] { min-height: 210px; max-height: 60dvh; line-height: 1.5; }
+textarea[name='good'], textarea[name='tomorrow'] { min-height: 64px; max-height: 40dvh; }
+
+/* ================= Recent entries: tap to read ================= */
+.log li { grid-template-columns: minmax(0, 1fr) auto; padding: 0; overflow: hidden; }
+.log-open { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; width: 100%; padding: var(--space-3); border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; transition: background .12s var(--ease); }
+.log-open:hover, .log-open:active { background: color-mix(in srgb, var(--green) 10%, transparent); }
+.log-open:focus-visible { outline-offset: -3px; }
+.log-open .log-main { display: grid; gap: 2px; min-width: 0; }
+.log-open .log-title, .log-open .log-meta, .log-open .log-good, .log-open .log-note { display: block; }
+.log-chev { color: var(--color-faint); font-size: 1.6rem; font-weight: 900; line-height: 1; }
+.log-note, .log-good { white-space: normal; display: -webkit-box !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.log li .log-actions { padding-right: var(--space-2); }
+
+/* ================= The entry reading view ================= */
+dialog.entry { padding: 0; width: min(560px, 100%); height: min(780px, 100dvh); max-height: 100dvh; overflow: hidden; }
+dialog.entry[open] { display: flex; }
+@media (max-width: 580px) { dialog.entry { width: 100%; max-width: 100%; height: 100dvh; border-radius: 0; border-width: 0; } }
+.entry-inner { display: flex; flex-direction: column; width: 100%; min-height: 0; }
+.entry-top { display: flex; align-items: center; gap: var(--space-2); padding: calc(var(--space-3) + env(safe-area-inset-top)) var(--space-4) var(--space-2); }
+.entry-nav { flex: 1; display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.entry-pos { font-size: var(--text-xs); font-weight: 900; color: var(--color-muted); text-align: center; }
+.entry-nav .btn:disabled { opacity: .4; cursor: default; box-shadow: none; transform: none; }
+.entry-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--space-4); padding: var(--space-2) var(--space-5) var(--space-5); }
+.entry-body > * { min-width: 0; }
+.entry-date { font-size: 1.5rem; font-weight: 900; line-height: 1.15; color: var(--color-strong); outline: 0; }
+.entry-status { justify-self: start; padding: 4px 14px; border-radius: var(--radius-full); font-size: var(--text-sm); font-weight: 900; }
+.entry-status.held { background: var(--green-soft); color: var(--green-ink); }
+.entry-status.contact { background: var(--red-soft); color: var(--red-ink); }
+.entry-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.entry-stat { display: grid; gap: 2px; padding: var(--space-3); border-radius: 16px; background: var(--color-surface-2); }
+.entry-stat span { font-size: var(--text-xs); font-weight: 800; color: var(--color-muted); }
+.entry-stat strong { font-size: 1.15rem; font-weight: 900; color: var(--color-strong); }
+.entry-note-card { display: grid; gap: var(--space-2); padding: var(--space-4); border: 2px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.note-text { white-space: pre-wrap; line-height: 1.6; font-weight: 600; color: var(--color-text); user-select: text; }
+.entry-empty { color: var(--color-muted); font-weight: 700; }
+.entry-foot { display: flex; gap: var(--space-3); padding: var(--space-3) var(--space-5) calc(var(--space-4) + env(safe-area-inset-bottom)); border-top: 2px solid var(--color-border); background: var(--color-surface); }
+.entry-foot .btn { min-height: 52px; }
+.entry-foot #entryEdit { flex: 1; }
+@media (max-width: 400px) and (min-width: 1px) { .entry-nav .btn { padding: 0 var(--space-3); } }
+.done-details .note-text { padding: var(--space-3); border-radius: 12px; background: var(--color-surface); }
+
+/* rows use the full width now: Edit and Delete live in the reading view */
+.log li { grid-template-columns: minmax(0, 1fr); }
+.log-dot { width: 30px; height: 30px; font-size: .8rem; }
