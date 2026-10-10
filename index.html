@@ -210,96 +210,166 @@
         </section>
       </div>
 
-      <!-- Check-in: today's form and your recent entries -->
+      <!-- Check-in: your week, today's goal and form, patterns, past entries and a reminder -->
       <div class="page" id="page-checkin" data-page="checkin" hidden>
         <h1 class="page-title">Check-in</h1>
-      <section class="card checkin" aria-labelledby="checkinTitle">
-        <div class="card-head">
-          <h2 id="checkinTitle">Today's check-in</h2>
-          <span class="badge" id="checkinBadge" hidden>Done ✓</span>
-        </div>
 
-        <div id="checkinDone" class="checkin-done" hidden>
-          <div class="done-banner"><span class="done-check" aria-hidden="true">✓</span><p id="checkinSummary"></p></div>
-          <button class="btn btn-ghost btn-block" id="editTodayBtn">Edit today's entry</button>
-          <div class="urge-tips">
-            <h3>When the urge hits</h3>
-            <ul>
-              <li>Wait 20 minutes. Urges peak and pass.</li>
-              <li>Write what you'd say in a note here instead of sending it.</li>
-              <li>Message a friend who knows what you're working on.</li>
-              <li>Re-read your reason. You chose this for a good reason.</li>
-            </ul>
+        <section class="card week-card" aria-labelledby="weekTitle">
+          <div class="card-head">
+            <h2 id="weekTitle">This week</h2>
+            <span class="streak-pill" id="weekStreak">🔥 0-day streak</span>
           </div>
-        </div>
+          <div class="week" id="weekStrip" role="group" aria-label="Your last 7 days. Tap a day to open it."></div>
+        </section>
 
-        <form id="checkinForm" class="stack">
-          <fieldset class="status-choice">
-            <legend class="field-label">How did today go?</legend>
-            <label class="choice choice-held">
-              <input type="radio" name="status" value="held" checked>
-              <span class="choice-card"><span class="choice-icon" aria-hidden="true">✓</span><span class="choice-text"><strong>I held No Contact</strong><small>No calls, texts, or checking their profiles</small></span></span>
-            </label>
-            <label class="choice choice-contact">
-              <input type="radio" name="status" value="contact">
-              <span class="choice-card"><span class="choice-icon" aria-hidden="true">✕</span><span class="choice-text"><strong>I had contact</strong><small>Restarts the count — and that's okay</small></span></span>
-            </label>
-          </fieldset>
+        <section class="card goal-card" aria-labelledby="goalTitle">
+          <div class="card-head">
+            <h2 id="goalTitle">Daily goal</h2>
+            <span class="badge" id="goalBadge">0/3</span>
+          </div>
+          <div class="bar" id="goalBar" role="progressbar" aria-label="Daily goal progress" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><span id="goalFill"></span></div>
+          <ul class="goal-steps" id="goalSteps"></ul>
+        </section>
 
-          <div class="contact-time" id="contactTimeRow" hidden>
-            <label class="field">
-              <span class="field-label">What time was the contact?</span>
-              <input type="time" name="time">
-            </label>
-            <span class="field-hint">Your counter restarts from this exact moment.</span>
+        <section class="card checkin" aria-labelledby="checkinTitle">
+          <div class="card-head">
+            <h2 id="checkinTitle">Today's check-in</h2>
+            <span class="badge" id="checkinBadge" hidden>Done ✓</span>
           </div>
 
-          <fieldset class="mood">
-            <legend class="field-label">Mood</legend>
-            <div class="mood-row">
-              <label><input type="radio" name="mood" value="1" aria-label="Very low"><span title="Very low">😞</span></label>
-              <label><input type="radio" name="mood" value="2" aria-label="Low"><span title="Low">😕</span></label>
-              <label><input type="radio" name="mood" value="3" aria-label="Okay" checked><span title="Okay">😐</span></label>
-              <label><input type="radio" name="mood" value="4" aria-label="Good"><span title="Good">🙂</span></label>
-              <label><input type="radio" name="mood" value="5" aria-label="Great"><span title="Great">😄</span></label>
+          <div id="checkinDone" class="checkin-done" hidden>
+            <div class="done-banner"><span class="done-check" aria-hidden="true">✓</span><p id="checkinSummary"></p></div>
+            <div class="done-details" id="doneDetails"></div>
+            <button class="btn btn-ghost btn-block" id="editTodayBtn">Edit today's entry</button>
+            <div class="urge-tips">
+              <h3>When the urge hits</h3>
+              <ul>
+                <li>Wait 20 minutes. Urges peak and pass.</li>
+                <li>Write what you'd say in a note here instead of sending it.</li>
+                <li>Message a friend who knows what you're working on.</li>
+                <li>Re-read your reason. You chose this for a good reason.</li>
+              </ul>
             </div>
-            <div class="mood-scale"><span>Very low</span><span>Great</span></div>
-          </fieldset>
-
-          <label class="field">
-            <span class="field-label">Urge to reach out <output id="urgeOut">0</output>/10</span>
-            <input type="range" name="urge" min="0" max="10" value="0" id="urgeInput">
-          </label>
-          <div class="urge-alert" id="urgeAlert" role="status" hidden>
-            <p><strong>That’s a peak.</strong> It will pass — don’t send anything yet.</p>
-            <button class="btn btn-urgent btn-sm" type="button" id="urgeAlertBtn">Open urgent help</button>
           </div>
 
-          <label class="field">
-            <span class="field-label">Date</span>
-            <input type="date" name="date" required>
-          </label>
+          <form id="checkinForm" class="stack">
+            <button class="btn btn-ghost btn-block quick-held" type="button" id="quickHeldBtn">⚡ Quick save: I held today</button>
 
-          <label class="field">
-            <span class="field-label">Note <span class="optional">optional</span></span>
-            <textarea name="note" rows="2" maxlength="500" placeholder="What helped today? What was hard?"></textarea>
-          </label>
+            <fieldset class="status-choice">
+              <legend class="field-label">How did today go?</legend>
+              <label class="choice choice-held">
+                <input type="radio" name="status" value="held" checked>
+                <span class="choice-card"><span class="choice-icon" aria-hidden="true">✓</span><span class="choice-text"><strong>I held No Contact</strong><small>No calls, texts, or checking their profiles</small></span></span>
+              </label>
+              <label class="choice choice-contact">
+                <input type="radio" name="status" value="contact">
+                <span class="choice-card"><span class="choice-icon" aria-hidden="true">✕</span><span class="choice-text"><strong>I had contact</strong><small>Restarts the count — and that's okay</small></span></span>
+              </label>
+            </fieldset>
 
-          <div class="form-actions">
-            <button class="btn btn-primary btn-lg" type="submit">Save check-in</button>
-            <button class="btn btn-ghost btn-lg" type="button" id="cancelEditBtn" hidden>Cancel</button>
+            <div class="contact-time" id="contactTimeRow" hidden>
+              <label class="field">
+                <span class="field-label">What time was the contact?</span>
+                <input type="time" name="time">
+              </label>
+              <span class="field-hint">Your counter restarts from this exact moment.</span>
+            </div>
+
+            <fieldset class="mood">
+              <legend class="field-label">Mood</legend>
+              <div class="mood-row">
+                <label><input type="radio" name="mood" value="1" aria-label="Very low"><span title="Very low">😞</span></label>
+                <label><input type="radio" name="mood" value="2" aria-label="Low"><span title="Low">😕</span></label>
+                <label><input type="radio" name="mood" value="3" aria-label="Okay" checked><span title="Okay">😐</span></label>
+                <label><input type="radio" name="mood" value="4" aria-label="Good"><span title="Good">🙂</span></label>
+                <label><input type="radio" name="mood" value="5" aria-label="Great"><span title="Great">😄</span></label>
+              </div>
+              <div class="mood-scale"><span>Very low</span><span>Great</span></div>
+            </fieldset>
+
+            <label class="field">
+              <span class="field-label">Urge to reach out <output id="urgeOut">0</output>/10</span>
+              <input type="range" name="urge" min="0" max="10" value="0" id="urgeInput">
+            </label>
+            <div class="urge-alert" id="urgeAlert" role="status" hidden>
+              <p><strong>That’s a peak.</strong> It will pass — don’t send anything yet.</p>
+              <button class="btn btn-urgent btn-sm" type="button" id="urgeAlertBtn">Open urgent help</button>
+            </div>
+
+            <details class="more">
+              <summary><span class="more-ico" aria-hidden="true">🌪️</span><span class="more-title">What triggered you?</span><span class="more-count" id="triggerCount"></span></summary>
+              <div class="more-body"><div class="picks" id="triggerPicks"></div></div>
+            </details>
+
+            <details class="more">
+              <summary><span class="more-ico" aria-hidden="true">🌟</span><span class="more-title">Wins today</span><span class="more-count" id="winCount"></span></summary>
+              <div class="more-body"><p class="field-hint">Small things count. Pick all that you did.</p><div class="picks" id="winPicks"></div></div>
+            </details>
+
+            <details class="more">
+              <summary><span class="more-ico" aria-hidden="true">🛌</span><span class="more-title">Sleep and energy</span><span class="more-count" id="bodyCount"></span></summary>
+              <div class="more-body">
+                <fieldset class="field-group"><legend class="field-label">Hours of sleep</legend><div class="picks picks-row" id="sleepPicks"></div></fieldset>
+                <fieldset class="field-group"><legend class="field-label">Energy</legend><div class="picks picks-row" id="energyPicks"></div></fieldset>
+              </div>
+            </details>
+
+            <details class="more" open>
+              <summary><span class="more-ico" aria-hidden="true">✍️</span><span class="more-title">Reflection</span></summary>
+              <div class="more-body">
+                <label class="field"><span class="field-label">One good thing today <span class="optional">optional</span></span><input type="text" name="good" maxlength="140" autocomplete="off" placeholder="Even something tiny"></label>
+                <label class="field"><span class="field-label">Tomorrow I will… <span class="optional">optional</span></span><input type="text" name="tomorrow" maxlength="140" autocomplete="off" placeholder="One small plan"></label>
+                <div class="field">
+                  <span class="field-label">Note <span class="optional">optional</span></span>
+                  <div class="prompts" id="promptChips" aria-label="Writing prompts"></div>
+                  <textarea name="note" rows="3" maxlength="500" placeholder="What helped today? What was hard?"></textarea>
+                  <span class="field-hint"><output id="noteCount">0</output>/500</span>
+                </div>
+              </div>
+            </details>
+
+            <label class="field">
+              <span class="field-label">Date</span>
+              <input type="date" name="date" required>
+            </label>
+
+            <div class="form-actions">
+              <button class="btn btn-primary btn-lg" type="submit">Save check-in</button>
+              <button class="btn btn-ghost btn-lg" type="button" id="cancelEditBtn" hidden>Cancel</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card insights-card" aria-labelledby="insTitle">
+          <div class="card-head"><h2 id="insTitle">Your patterns</h2></div>
+          <p class="muted small" id="insHint">Check in on a few more days and your patterns will show up here.</p>
+          <div id="insBody" hidden>
+            <div class="insight-tiles" id="insTiles"></div>
+            <div class="chart-wrap" id="chartMood"></div>
+            <div class="chart-wrap" id="chartUrge"></div>
+            <details class="tablebox"><summary>Show as a table</summary><div class="table-scroll"><table class="data-table" id="insTable"></table></div></details>
           </div>
-        </form>
-      </section>
+        </section>
 
-      <section class="card log-card" aria-labelledby="logTitle">
-        <div class="card-head"><h2 id="logTitle">Recent entries</h2></div>
-        <ul class="log" id="log"></ul>
-        <div class="empty" id="logEmpty" hidden>
-          <p><strong>No check-ins yet.</strong></p>
-          <p class="muted">Your first one takes about ten seconds.</p>
-        </div>
-      </section>
+        <section class="card log-card" aria-labelledby="logTitle">
+          <div class="card-head"><h2 id="logTitle">Recent entries</h2></div>
+          <div class="chips filters" id="logFilters" role="group" aria-label="Filter entries"></div>
+          <ul class="log" id="log"></ul>
+          <div class="empty" id="logEmpty" hidden>
+            <p><strong id="logEmptyTitle">No check-ins yet.</strong></p>
+            <p class="muted" id="logEmptyText">Your first one takes about ten seconds.</p>
+          </div>
+          <button class="btn btn-ghost btn-block" type="button" id="logMore" hidden>Show more</button>
+        </section>
+
+        <section class="card reminder-card" aria-labelledby="remTitle">
+          <h2 id="remTitle">Daily reminder</h2>
+          <p class="muted small">Adds a repeating reminder to your calendar app. It’s the most reliable way to get a nudge, because this app never needs a server.</p>
+          <div class="reminder-row">
+            <label class="field"><span class="field-sub">Time</span><input type="time" id="reminderTime" value="21:00"></label>
+            <button class="btn btn-ghost" type="button" id="reminderBtn">📅 Add to calendar</button>
+          </div>
+        </section>
       </div>
 
       <!-- Progress: stats, heatmap and milestones -->

@@ -9,14 +9,12 @@
  * and keeps running if the dialog is closed.
  */
 import { splitElapsed, formatElapsed } from './streaks.js';
+import { TAGS } from './tags.js';
+import { confetti } from './fx.js';
 
 const STEPS = 7;
 const BREATH_ROUNDS = 3;
 const BREATH_PHASES = [['in', 'Breathe in…', 4], ['hold', 'Hold…', 4], ['out', 'Breathe out slowly…', 6]];
-const TAGS = [
-  ['lonely', '😔 Lonely'], ['bored', '🥱 Bored'], ['night', '🌙 Late night'], ['saw', '👀 Saw something'],
-  ['memory', '💭 A memory'], ['angry', '😤 Angry'], ['drinking', '🍷 Drinking'], ['other', '✨ Something else'],
-];
 const SENSES = [[5, 'things you can see', '👀'], [4, 'things you can touch', '✋'], [3, 'sounds you can hear', '👂'], [2, 'things you can smell', '👃'], [1, 'thing you can taste', '👅']];
 const TOTAL_TAPS = SENSES.reduce((n, [count]) => n + count, 0);
 const ACTIVITIES = [
@@ -416,16 +414,6 @@ export function createRescue(ctx) {
     confetti();
     navigator.vibrate?.([30, 40, 30]);
     ctx.toast(saved ? `Urge ${ctx.urgesCount()} survived. Every second COUNTS!` : 'You did it. (I couldn’t save this one, but it still counts.)');
-  }
-
-  function confetti() {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const colors = ['#58CC02', '#FFC800', '#FF9600', '#FF4B4B', '#CE82FF', '#89E219'];
-    const box = el('div', { class: 'confetti', 'aria-hidden': 'true' }, Array.from({ length: 40 }, (_, k) => el('i', {
-      style: `left:${Math.random() * 100}%;background:${colors[k % colors.length]};animation-delay:${(Math.random() * 0.5).toFixed(2)}s;animation-duration:${(1.8 + Math.random() * 1.4).toFixed(2)}s;--drift:${Math.round(Math.random() * 120 - 60)}px`,
-    })));
-    document.body.append(box);
-    setTimeout(() => box.remove(), 3600);
   }
 
   /* ---------- once a second ---------- */

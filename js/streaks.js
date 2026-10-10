@@ -145,3 +145,78 @@ export function urgeStats(urges) {
   const relief = rated.length ? rated.reduce((n, u) => n + (u.before - u.after), 0) / rated.length : null;
   return { survived: urges.length, avgRelief: relief };
 }
+
+export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const weekdayIndex = (key) => (fromKey(key).getDay() + 6) % 7; // 0 = Monday
+
+/** The last `days` days ending today, for the "This week" strip: held / contact / missed / before-start. */
+export function weekStrip(checkins, startDate, today = toKey(), days = 7) {
+  const byDate = new Map(checkins.map((c) => [c.date, c]));
+  return Array.from({ length: days }, (_, i) => {
+    const date = addDays(today, i - (days - 1));
+    const entry = byDate.get(date);
+    let state = 'before';
+    if (entry) state = entry.status;
+    else if (startDate && date >= startDate) state = date === today ? 'pending' : 'missed';
+    return { date, state, isToday: date === today, weekday: weekdayIndex(date), entry };
+  });
+}
+
+/** Today's daily goal: check in, log 3 wins, write one good thing. */
+export const GOAL_STEPS = [
+  ['checkin', 'Check in today'],
+  ['wins', 'Log 3 wins'],
+  ['good', 'Write one good thing'],
+];
+export function dailyGoal(entry) {
+  const done = {
+    checkin: !!entry,
+    wins: (entry?.wins?.length ?? 0) >= 3,
+    good: !!entry?.good?.trim(),
+  };
+  const steps = GOAL_STEPS.map(([key, label]) => ({ key, label, done: done[key] }));
+  return { steps, done: steps.filter((s) => s.done).length, total: steps.length, complete: steps.every((s) => s.done) };
+}
+
+/**
+ * Patterns across check-ins (and the tags from urgent-help urges). Everything is null until there is enough
+ * data to say something honest: at least 5 check-ins, and 2 on a weekday before that weekday is called out.
+ */
+export function insights(checkins, urges = []) {
+  const n = checkins.length;
+  const sorted = [...checkins].sort((a, b) => a.date.localeCompare(b.date));
+  const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+  const num = (v) => (Number.isFinite(v) ? v : null);
+
+  const byDay = Array.from({ length: 7 }, () => ({ urge: [], mood: [] }));
+  for (const c of sorted) {
+    const d = byDay[weekdayIndex(c.date)];
+    if (num(c.urge) != null) d.urge.push(c.urge);
+    if (num(c.mood) != null) d.mood.push(c.mood);
+  }
+  const pick = (field, better) => {
+    if (n < 5) return null;
+    let best = null;
+    byDay.forEach((d, i) => {
+      if (d[field].length < 2) return;
+      const a = avg(d[field]);
+      if (best == null || better(a, best.avg)) best = { day: i, avg: a, count: d[field].length };
+    });
+    return best;
+  };
+
+  const counts = new Map();
+  for (const c of sorted) for (const t of c.triggers ?? []) counts.set(t, (counts.get(t) ?? 0) + 1);
+  for (const u of urges) for (const t of u.tags ?? []) counts.set(t, (counts.get(t) ?? 0) + 1);
+  const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+
+  return {
+    n,
+    hardestDay: pick('urge', (a, b) => a > b),
+    bestMoodDay: pick('mood', (a, b) => a > b),
+    topTrigger: top && top[1] >= 2 ? { key: top[0], count: top[1] } : null,
+    sleepAvg: avg(sorted.map((c) => num(c.sleep)).filter((v) => v != null)),
+    winsAvg: n >= 3 ? avg(sorted.map((c) => c.wins?.length ?? 0)) : null,
+    series: sorted.slice(-14).map((c) => ({ date: c.date, mood: num(c.mood), urge: num(c.urge) })),
+  };
+}

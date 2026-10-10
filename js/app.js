@@ -1,6 +1,9 @@
 import * as db from './db.js';
 import { createRescue } from './rescue.js';
-import { computeStats, buildCalendar, urgeStats, splitElapsed, formatElapsed, toTimestamp, toKey, fromKey, MILESTONES } from './streaks.js';
+import { computeStats, buildCalendar, urgeStats, weekStrip, dailyGoal, insights, WEEKDAYS, splitElapsed, formatElapsed, toTimestamp, toKey, fromKey, MILESTONES } from './streaks.js';
+import { TAGS, WINS, SLEEP, ENERGY, PROMPTS, labelOf } from './tags.js';
+import { lineChart } from './charts.js';
+import { confetti } from './fx.js';
 
 const $ = (sel) => document.querySelector(sel);
 const fmtMoment = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -9,10 +12,12 @@ const MOOD_WORDS = ['', 'Very low', 'Low', 'Okay', 'Good', 'Great'];
 const MOOD_EMOJI = ['🙂', '😞', '😕', '😐', '🙂', '😄'];
 const RING_LEN = 2 * Math.PI * 112; // matches the r="112" progress ring around the orb
 
+const LOG_PAGE = 14;                 // entries shown at a time in Recent entries
+const LOG_FILTERS = [['all', 'All'], ['held', 'Held'], ['contact', 'Contact'], ['notes', 'With notes']];
 const PEAK_URGE = 8;                 // urge level (0–10) treated as a "peak"
 
 // anchorTs = the exact moment the current No Contact run began (ms); days = whole days elapsed since then.
-const state = { settings: {}, checkins: [], urges: [], editing: null, days: 0, anchorTs: null };
+const state = { settings: {}, checkins: [], urges: [], editing: null, days: 0, anchorTs: null, logFilter: 'all', logLimit: LOG_PAGE };
 
 // The guided "urgent help" flow lives in rescue.js; it gets what it needs from here.
 const rescue = createRescue({
@@ -82,6 +87,7 @@ init().catch((err) => {
 
 async function init() {
   fillMascots();
+  buildPicks();
   bindUI();
   showTab(tabFromHash(), { scroll: false });
   await db.openDB();
@@ -189,9 +195,14 @@ function render() {
 
   renderCheckin(today);
   renderToday(today);
+  renderWeek(today, s);
+  renderGoal(today);
+  renderInsights();
   renderCalendar(today);
   renderMilestones(s);
   renderLog();
+  const rem = $('#reminderTime');
+  if (!rem.dataset.touched) rem.value = state.settings.reminderTime || '21:00';
   syncOrbit();
 }
 
@@ -217,10 +228,95 @@ function renderToday(today) {
   $('#checkinDot').hidden = !!entry;
   document.querySelector('.today-card').classList.toggle('done', !!entry);
   $('#todayIco').textContent = entry ? '✓' : '📝';
+  const g = dailyGoal(entry);
   $('#todayText').textContent = !entry
     ? 'You haven’t checked in yet. It takes about ten seconds.'
-    : entry.status === 'held' ? 'You held No Contact today. Nice work.' : 'You logged contact today. Tomorrow is a fresh start.';
+    : `${entry.status === 'held' ? 'You held No Contact today. Nice work.' : 'You logged contact today. Tomorrow is a fresh start.'} Daily goal ${g.done}/${g.total}.`;
   $('#todayBtn').textContent = entry ? 'See today’s check-in' : 'Check in now';
+}
+
+/** "This week": the last 7 days as tappable tiles, plus the streak. */
+function renderWeek(today, s) {
+  const icons = { held: '✓', contact: '✕', missed: '–', pending: '+', before: '' };
+  $('#weekStrip').replaceChildren(...weekStrip(state.checkins, state.settings.startDate, today).map((d) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'wk'; b.dataset.state = d.state; b.disabled = d.state === 'before';
+    if (d.isToday) b.dataset.today = 'true';
+    const word = { held: 'held No Contact', contact: 'had contact', missed: 'no entry', pending: 'not checked in yet', before: 'before you started' }[d.state];
+    b.setAttribute('aria-label', `${WEEKDAYS[d.weekday]} ${fmtShort.format(fromKey(d.date))}: ${word}`);
+    b.innerHTML = '<span class="wk-day"></span><span class="wk-num"></span><span class="wk-ico" aria-hidden="true"></span>';
+    b.querySelector('.wk-day').textContent = d.isToday ? 'Today' : WEEKDAYS[d.weekday].slice(0, 3);
+    b.querySelector('.wk-num').textContent = fromKey(d.date).getDate();
+    b.querySelector('.wk-ico').textContent = icons[d.state];
+    b.addEventListener('click', () => startEdit(d.date));
+    return b;
+  }));
+  $('#weekStreak').textContent = `🔥 ${s.checkinStreak}-day streak`;
+}
+
+/** Today's daily goal: check in, 3 wins, one good thing. */
+function renderGoal(today) {
+  const g = dailyGoal(state.checkins.find((c) => c.date === today));
+  $('#goalBadge').textContent = `${g.done}/${g.total}`;
+  $('#goalBadge').classList.toggle('complete', g.complete);
+  $('#goalFill').style.width = `${(g.done / g.total) * 100}%`;
+  $('#goalBar').setAttribute('aria-valuenow', String(g.done));
+  $('#goalSteps').replaceChildren(...g.steps.map((st) => {
+    const li = document.createElement('li');
+    li.className = st.done ? 'done' : '';
+    li.innerHTML = '<span class="goal-dot" aria-hidden="true"></span><span class="goal-text"></span>';
+    li.querySelector('.goal-dot').textContent = st.done ? '✓' : '';
+    li.querySelector('.goal-text').textContent = st.label;
+    return li;
+  }));
+}
+
+/** What you picked and wrote today, shown under the "Done" banner. */
+function renderDoneDetails(entry) {
+  const box = $('#doneDetails');
+  const rows = [];
+  const chips = (list, items) => items.length ? `<div class="chip-line">${items.map((v) => `<span class="mini-chip">${esc(labelOf(list, v))}</span>`).join('')}</div>` : '';
+  if (entry.triggers?.length) rows.push(`<p class="detail-label">Triggers</p>${chips(TAGS, entry.triggers)}`);
+  if (entry.wins?.length) rows.push(`<p class="detail-label">Wins</p>${chips(WINS, entry.wins)}`);
+  const body = [entry.sleep != null ? `😴 ${entry.sleep >= 9 ? '9h+' : entry.sleep <= 4 ? '≤4h' : `${entry.sleep}h`} sleep` : '', entry.energy != null ? `${ENERGY[entry.energy - 1][1]} ${ENERGY[entry.energy - 1][2]} energy` : ''].filter(Boolean);
+  if (body.length) rows.push(`<p class="detail-label">Body</p><div class="chip-line">${body.map((t) => `<span class="mini-chip">${esc(t)}</span>`).join('')}</div>`);
+  if (entry.good) rows.push(`<p class="detail-label">One good thing</p><p class="detail-text">🌟 ${esc(entry.good)}</p>`);
+  if (entry.tomorrow) rows.push(`<p class="detail-label">Tomorrow I will…</p><p class="detail-text">➡️ ${esc(entry.tomorrow)}</p>`);
+  box.innerHTML = rows.join('');
+  box.hidden = rows.length === 0;
+}
+const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/** Patterns: tiles (hardest day, best mood day, top trigger, sleep, wins) and two small charts. */
+function renderInsights() {
+  const ins = insights(state.checkins, state.urges);
+  const show = ins.n >= 3;
+  $('#insHint').hidden = show;
+  $('#insBody').hidden = !show;
+  if (!show) { $('#insHint').textContent = `Check in on ${3 - ins.n} more ${3 - ins.n === 1 ? 'day' : 'days'} and your patterns will show up here.`; return; }
+
+  const tile = (ico, label, value, sub) => `<div class="insight"><span class="insight-ico" aria-hidden="true">${ico}</span><span class="insight-label">${esc(label)}</span><strong class="insight-value">${esc(value)}</strong><span class="insight-sub">${esc(sub)}</span></div>`;
+  const wd = (d) => WEEKDAYS[d.day];
+  $('#insTiles').innerHTML = [
+    ins.hardestDay ? tile('🌊', 'Hardest day', wd(ins.hardestDay), `avg urge ${ins.hardestDay.avg.toFixed(1)}/10`) : tile('🌊', 'Hardest day', '—', 'needs a few more days'),
+    ins.bestMoodDay ? tile('☀️', 'Best mood day', wd(ins.bestMoodDay), `avg mood ${ins.bestMoodDay.avg.toFixed(1)}/5`) : tile('☀️', 'Best mood day', '—', 'needs a few more days'),
+    ins.topTrigger ? tile('🌪️', 'Top trigger', labelOf(TAGS, ins.topTrigger.key).replace(/^\S+\s/, ''), `${ins.topTrigger.count} times`) : tile('🌪️', 'Top trigger', '—', 'tag triggers to see'),
+    ins.sleepAvg != null ? tile('😴', 'Average sleep', `${ins.sleepAvg.toFixed(1)}h`, 'when you log it') : tile('😴', 'Average sleep', '—', 'log your sleep to see'),
+    ins.winsAvg != null ? tile('🌟', 'Wins per day', ins.winsAvg.toFixed(1), 'on average') : '',
+  ].join('');
+
+  const fmtD = (d) => fmtShort.format(fromKey(d)).replace(/^\w+,?\s/, '');
+  const moodWord = (v) => MOOD_WORDS[Math.round(v)] ?? '';
+  const when = (d) => fmtShort.format(fromKey(d));
+  $('#chartMood').replaceChildren(lineChart({
+    title: 'Mood', caption: `last ${ins.series.length} check-ins`, colorVar: '--chart-mood', min: 1, max: 5, ticks: [1, 3, 5], fmtDate: fmtD,
+    points: ins.series.map((p) => ({ date: p.date, value: p.mood, label: `${when(p.date)} · mood ${p.mood} (${moodWord(p.mood)})` })),
+  }));
+  $('#chartUrge').replaceChildren(lineChart({
+    title: 'Urge to reach out', caption: `last ${ins.series.length} check-ins`, colorVar: '--chart-urge', min: 0, max: 10, ticks: [0, 5, 10], fmtDate: fmtD,
+    points: ins.series.map((p) => ({ date: p.date, value: p.urge, label: `${when(p.date)} · urge ${p.urge}/10` })),
+  }));
+  $('#insTable').innerHTML = `<thead><tr><th>Day</th><th>Mood</th><th>Urge</th></tr></thead><tbody>${ins.series.map((p) => `<tr><td>${esc(when(p.date))}</td><td>${p.mood ?? '—'}</td><td>${p.urge ?? '—'}</td></tr>`).join('')}</tbody>`;
 }
 
 function renderCheckin(today) {
@@ -239,11 +335,13 @@ function renderCheckin(today) {
       ? 'You held No Contact today.'
       : `You logged contact today${todayEntry.time ? ` at ${todayEntry.time}` : ''}. Tomorrow is a fresh start.`;
     $('#checkinSummary').textContent = `${word} Mood: ${MOOD_WORDS[todayEntry.mood]} · Urge ${todayEntry.urge}/10.`;
+    renderDoneDetails(todayEntry);
   }
   const f = $('#checkinForm');
   f.date.max = today;
   f.date.min = state.settings.startDate;
   if (!editing && !f.dataset.dirty) fillForm({ date: today, status: 'held', mood: 3, urge: 0, note: '' });
+  syncContactRow();
 }
 
 function fillForm(entry) {
@@ -255,8 +353,51 @@ function fillForm(entry) {
   $('#urgeOut').textContent = f.urge.value;
   f.note.value = entry.note ?? '';
   f.time.value = entry.time ?? (entry.status === 'contact' ? '00:00' : ''); // old contact entries had no time: midnight
+  const setGroup = (name, values) => f.querySelectorAll(`input[name="${name}"]`).forEach((i) => { i.checked = values.includes(i.value); });
+  setGroup('trigger', entry.triggers ?? []);
+  setGroup('win', entry.wins ?? []);
+  setGroup('sleep', entry.sleep != null ? [String(entry.sleep)] : []);
+  setGroup('energy', entry.energy != null ? [String(entry.energy)] : []);
+  f.good.value = entry.good ?? '';
+  f.tomorrow.value = entry.tomorrow ?? '';
+  $('#noteCount').textContent = f.note.value.length;
+  updateMoreCounts();
   syncContactRow();
   updateUrgeAlert();
+}
+
+/** The little "2 selected" badges on the collapsible sections. */
+function updateMoreCounts() {
+  const f = $('#checkinForm');
+  const n = (name) => f.querySelectorAll(`input[name="${name}"]:checked`).length;
+  const set = (id, count, word) => { const el = $(id); el.textContent = count ? `${count} ${word}` : ''; el.hidden = !count; };
+  set('#triggerCount', n('trigger'), 'selected');
+  set('#winCount', n('win'), n('win') === 1 ? 'win' : 'wins');
+  set('#bodyCount', n('sleep') + n('energy'), 'set');
+}
+
+/** Build the chips for triggers, wins, sleep, energy and writing prompts from the shared lists. */
+function buildPicks() {
+  const pick = (type, name, value, text) => {
+    const label = document.createElement('label'); label.className = 'pick';
+    const input = Object.assign(document.createElement('input'), { type, name, value });
+    const span = document.createElement('span'); span.textContent = text;
+    label.append(input, span); return label;
+  };
+  $('#triggerPicks').replaceChildren(...TAGS.map(([v, t]) => pick('checkbox', 'trigger', v, t)));
+  $('#winPicks').replaceChildren(...WINS.map(([v, t]) => pick('checkbox', 'win', v, t)));
+  $('#sleepPicks').replaceChildren(...SLEEP.map(([v, t]) => pick('checkbox', 'sleep', v, t)));
+  $('#energyPicks').replaceChildren(...ENERGY.map(([v, emoji, t]) => pick('checkbox', 'energy', v, `${emoji} ${t}`)));
+  $('#promptChips').replaceChildren(...PROMPTS.map((text) => {
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'chip chip-sm', textContent: text });
+    b.addEventListener('click', () => {
+      const f = $('#checkinForm');
+      f.note.value = `${f.note.value}${f.note.value && !f.note.value.endsWith('\n') ? '\n' : ''}${text} `.slice(0, 500);
+      f.dataset.dirty = '1'; $('#noteCount').textContent = f.note.value.length;
+      f.note.focus(); f.note.setSelectionRange(f.note.value.length, f.note.value.length);
+    });
+    return b;
+  }));
 }
 
 /** Show the "what time was the contact?" field only when logging contact. */
@@ -265,6 +406,7 @@ function syncContactRow() {
   const contact = f.elements.status.value === 'contact';
   $('#contactTimeRow').hidden = !contact;
   f.time.required = contact;
+  $('#quickHeldBtn').hidden = contact || !!state.editing; // one-tap save only for a plain "held" day
 }
 
 function onStatusChange() {
@@ -305,8 +447,25 @@ function renderMilestones(s) {
 }
 
 function renderLog() {
-  const recent = [...state.checkins].reverse().slice(0, 14);
+  const box = $('#logFilters');
+  if (!box.children.length) {
+    box.replaceChildren(...LOG_FILTERS.map(([key, label]) => {
+      const b = Object.assign(document.createElement('button'), { type: 'button', className: 'chip chip-sm', textContent: label });
+      b.dataset.filter = key;
+      b.addEventListener('click', () => { state.logFilter = key; state.logLimit = LOG_PAGE; renderLog(); });
+      return b;
+    }));
+  }
+  [...box.children].forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === state.logFilter)));
+
+  const matches = (c) => state.logFilter === 'all' || (state.logFilter === 'notes' ? !!(c.note || c.good) : c.status === state.logFilter);
+  const all = [...state.checkins].reverse().filter(matches);
+  const recent = all.slice(0, state.logLimit);
   $('#logEmpty').hidden = recent.length > 0;
+  $('#logEmptyTitle').textContent = state.checkins.length ? 'Nothing matches that filter.' : 'No check-ins yet.';
+  $('#logEmptyText').textContent = state.checkins.length ? 'Try another filter above.' : 'Your first one takes about ten seconds.';
+  $('#logMore').hidden = all.length <= state.logLimit;
+  $('#logMore').textContent = `Show ${Math.min(LOG_PAGE, all.length - state.logLimit)} more`;
   $('#log').replaceChildren(...recent.map((c) => {
     const li = document.createElement('li');
     li.innerHTML = `
@@ -314,6 +473,7 @@ function renderLog() {
       <div class="log-main">
         <div class="log-title"></div>
         <div class="log-meta"></div>
+        ${c.good ? '<div class="log-good"></div>' : ''}
         ${c.note ? '<div class="log-note"></div>' : ''}
       </div>
       <div class="log-actions">
@@ -322,7 +482,12 @@ function renderLog() {
       </div>`;
     li.querySelector('.log-dot').textContent = c.status === 'held' ? '✓' : '✕';
     li.querySelector('.log-title').textContent = `${fmtShort.format(fromKey(c.date))} · ${c.status === 'held' ? 'Held No Contact' : `Had contact${c.time ? ` at ${c.time}` : ''}`}`;
-    li.querySelector('.log-meta').textContent = `${MOOD_EMOJI[c.mood] ?? ''} ${MOOD_WORDS[c.mood] ?? '—'} · Urge ${c.urge}/10`;
+    const meta = [`${MOOD_EMOJI[c.mood] ?? ''} ${MOOD_WORDS[c.mood] ?? '—'}`, `Urge ${c.urge}/10`];
+    if (c.sleep != null) meta.push(`😴 ${c.sleep >= 9 ? '9h+' : c.sleep <= 4 ? '≤4h' : `${c.sleep}h`}`);
+    if (c.wins?.length) meta.push(`🌟 ${c.wins.length} ${c.wins.length === 1 ? 'win' : 'wins'}`);
+    if (c.triggers?.length) meta.push(c.triggers.map((t) => labelOf(TAGS, t)).join(', '));
+    li.querySelector('.log-meta').textContent = meta.join(' · ');
+    if (c.good) li.querySelector('.log-good').textContent = `🌟 ${c.good}`;
     if (c.note) li.querySelector('.log-note').textContent = c.note;
     li.querySelector('[data-act="edit"]').addEventListener('click', () => startEdit(c.date));
     li.querySelector('[data-act="delete"]').addEventListener('click', () => removeEntry(c.date));
@@ -382,6 +547,12 @@ async function onCheckinSubmit(e) {
     urge: Number(data.get('urge')),
     note: String(data.get('note') || '').trim(),
     time: data.get('status') === 'contact' ? String(data.get('time') || '') : '', // only contact moments need a time
+    triggers: data.getAll('trigger'),
+    wins: data.getAll('win'),
+    sleep: data.get('sleep') ? Number(data.get('sleep')) : null,
+    energy: data.get('energy') ? Number(data.get('energy')) : null,
+    good: String(data.get('good') || '').trim(),
+    tomorrow: String(data.get('tomorrow') || '').trim(),
   };
   if (entry.date > toKey()) return toast("You can't check in for a future date.");
   if (entry.date < state.settings.startDate) return toast('That date is before your start date.');
@@ -392,13 +563,16 @@ async function onCheckinSubmit(e) {
   }
 
   const before = computeStats(state.checkins, state.settings.startDate, toKey(), { startTime: startTimeOf(state.settings) });
+  const goalBefore = dailyGoal(state.checkins.find((c) => c.date === entry.date));
   await db.saveCheckin(entry);
   state.editing = null;
   delete f.dataset.dirty;
   await load(); render();
   const after = computeStats(state.checkins, state.settings.startDate, toKey(), { startTime: startTimeOf(state.settings) });
 
-  if (entry.status === 'contact') toast('Logged. One moment doesn’t erase your progress — your longest run still counts.');
+  const goalAfter = dailyGoal(entry);
+  if (entry.date === toKey() && goalAfter.complete && !goalBefore.complete) { confetti(); toast('Daily goal complete! 3 of 3. Every second COUNTS!'); }
+  else if (entry.status === 'contact') toast('Logged. One moment doesn’t erase your progress — your longest run still counts.');
   else if (after.milestonesReached.length > before.milestonesReached.length) toast(`Milestone reached: ${after.milestonesReached.at(-1)} days. Be proud of that.`);
   else toast('Check-in saved');
   navigator.vibrate?.(15);
@@ -462,6 +636,30 @@ async function onSettingsClose() {
   toast('Settings saved');
 }
 
+/** A repeating daily reminder as a calendar file: the most reliable nudge for an app with no server. */
+async function downloadReminder() {
+  const time = $('#reminderTime').value || '21:00';
+  const [hh, mm] = time.split(':');
+  const day = toKey().replaceAll('-', '');
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+  const lines = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//No Contact Dude//Daily check-in//EN', 'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT', `UID:daily-checkin-${day}@no-contact-dude`, `DTSTAMP:${stamp}`,
+    `DTSTART:${day}T${hh}${mm}00`, 'DURATION:PT10M', 'RRULE:FREQ=DAILY',
+    'SUMMARY:No Contact Dude check-in', 'DESCRIPTION:Take ten seconds to check in. Every second counts.',
+    'BEGIN:VALARM', 'TRIGGER:PT0S', 'ACTION:DISPLAY', 'DESCRIPTION:No Contact Dude check-in', 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR',
+  ];
+  const blob = new Blob([`${lines.join('\r\n')}\r\n`], { type: 'text/calendar' });
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement('a'), { href: url, download: 'no-contact-dude-daily-checkin.ics' });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  await db.setSetting('reminderTime', time);
+  state.settings.reminderTime = time;
+  toast(`Calendar file downloaded. Open it to add a daily ${time} reminder.`);
+}
+
 async function exportBackup() {
   const data = await db.exportData();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -517,7 +715,17 @@ function bindUI() {
   const cf = $('#checkinForm');
   cf.addEventListener('submit', onCheckinSubmit);
   cf.addEventListener('input', () => { cf.dataset.dirty = '1'; });
-  cf.addEventListener('change', (e) => { if (e.target.name === 'status') onStatusChange(); });
+  cf.addEventListener('change', (e) => {
+    const { name } = e.target;
+    if (name === 'status') onStatusChange();
+    if ((name === 'sleep' || name === 'energy') && e.target.checked) cf.querySelectorAll(`input[name="${name}"]`).forEach((i) => { if (i !== e.target) i.checked = false; }); // pick one, or none
+    updateMoreCounts();
+  });
+  cf.note.addEventListener('input', () => { $('#noteCount').textContent = cf.note.value.length; });
+  $('#quickHeldBtn').addEventListener('click', () => cf.requestSubmit());
+  $('#logMore').addEventListener('click', () => { state.logLimit += LOG_PAGE; renderLog(); });
+  $('#reminderBtn').addEventListener('click', downloadReminder);
+  $('#reminderTime').addEventListener('input', (e) => { e.target.dataset.touched = '1'; });
   $('#urgeInput').addEventListener('input', (e) => { $('#urgeOut').textContent = e.target.value; updateUrgeAlert(); });
   $('#urgentBtn').addEventListener('click', () => rescue.open());
   $('#urgeAlertBtn').addEventListener('click', () => rescue.open());
