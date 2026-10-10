@@ -135,3 +135,13 @@ export function buildCalendar(checkins, startDate, today = toKey(), weeks = 15) 
   }
   return days;
 }
+
+/**
+ * urgeStats(urges): how many urges were ridden out, and how much the urge dropped on average
+ * between the first rating ("before") and the last ("after"). Only entries with both ratings count for relief.
+ */
+export function urgeStats(urges) {
+  const rated = urges.filter((u) => Number.isFinite(u.before) && Number.isFinite(u.after));
+  const relief = rated.length ? rated.reduce((n, u) => n + (u.before - u.after), 0) / rated.length : null;
+  return { survived: urges.length, avgRelief: relief };
+}

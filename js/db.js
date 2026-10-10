@@ -1,16 +1,18 @@
 /**
  * db.js — tiny promise wrapper around IndexedDB. No dependencies.
  *
- * Database: "clear-days" (version 1)
+ * Database: "clear-days" (version 2)
  *   checkins  keyPath "date" (YYYY-MM-DD, local time) → one entry per day
  *             { date, status: 'held' | 'contact', mood: 1-5, urge: 0-10, note, time?, createdAt, updatedAt }
  *             `time` ("HH:MM") is only set for 'contact' entries: the moment the count restarts.
  *             index "byStatus"
- *   settings  keyPath "key" → { key, value }  (startDate, startTime "HH:MM", goal, reason)
+ *   settings  keyPath "key" → { key, value }  (startDate, startTime "HH:MM", goal, reason, friendName, friendPhone)
+ *   urges     keyPath "at" (ISO time) → one entry per urge the user rode out with the urgent-help flow
+ *             { at, before: 0-10, after: 0-10 | null, tags: string[], activity: string | null, waitedMin: number }
  *             No schema change was needed for startTime / time: records are free-form objects.
  */
 const DB_NAME = 'clear-days';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 let dbPromise;
 
 function promisify(req) {
@@ -32,6 +34,9 @@ export function openDB() {
         const checkins = db.createObjectStore('checkins', { keyPath: 'date' });
         checkins.createIndex('byStatus', 'status', { unique: false });
         db.createObjectStore('settings', { keyPath: 'key' });
+      }
+      if (event.oldVersion < 2) {
+        db.createObjectStore('urges', { keyPath: 'at' });
       }
     };
     req.onsuccess = () => {
@@ -82,6 +87,13 @@ export async function getAllCheckins() {
 
 export const deleteCheckin = (date) => tx('checkins', 'readwrite', (s) => promisify(s.delete(date)));
 
+/* ---------- Urges ridden out ---------- */
+export const saveUrge = (urge) => tx('urges', 'readwrite', (s) => promisify(s.put(urge)));
+export async function getAllUrges() {
+  const all = await tx('urges', 'readonly', (s) => promisify(s.getAll()));
+  return all.sort((a, b) => a.at.localeCompare(b.at));
+}
+
 /* ---------- Settings ---------- */
 export async function getSetting(key, fallback = null) {
   const row = await tx('settings', 'readonly', (s) => promisify(s.get(key)));
@@ -102,6 +114,7 @@ export async function exportData() {
     exportedAt: new Date().toISOString(),
     settings: await getAllSettings(),
     checkins: await getAllCheckins(),
+    urges: await getAllUrges(),
   };
 }
 
@@ -110,15 +123,17 @@ export async function importData(payload, { replace = true } = {}) {
     throw new Error('This file is not a Clear Days backup.');
   }
   const valid = payload.checkins.filter((c) => /^\d{4}-\d{2}-\d{2}$/.test(c?.date) && ['held', 'contact'].includes(c.status));
-  await tx(['checkins', 'settings'], 'readwrite', (checkins, settings) => {
-    if (replace) { checkins.clear(); settings.clear(); }
+  const urges = (Array.isArray(payload.urges) ? payload.urges : []).filter((u) => typeof u?.at === 'string' && !Number.isNaN(Date.parse(u.at)));
+  await tx(['checkins', 'settings', 'urges'], 'readwrite', (checkins, settings, urgeStore) => {
+    if (replace) { checkins.clear(); settings.clear(); urgeStore.clear(); }
     valid.forEach((c) => checkins.put(c));
+    urges.forEach((u) => urgeStore.put(u));
     Object.entries(payload.settings || {}).forEach(([key, value]) => settings.put({ key, value }));
   });
   return valid.length;
 }
 
-export const clearAll = () => tx(['checkins', 'settings'], 'readwrite', (c, s) => { c.clear(); s.clear(); });
+export const clearAll = () => tx(['checkins', 'settings', 'urges'], 'readwrite', (c, s, u) => { c.clear(); s.clear(); u.clear(); });
 
 /** Ask the browser not to evict our data under storage pressure. */
 export async function requestPersistence() {
