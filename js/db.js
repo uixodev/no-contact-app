@@ -2,6 +2,8 @@
  * db.js — tiny promise wrapper around IndexedDB. No dependencies.
  *
  * Database: "clear-days" (version 2)
+ *   (The app is now called No Contact Dude, but the internal ids below keep their old names on purpose so
+ *   existing databases and backup files keep working.)
  *   checkins  keyPath "date" (YYYY-MM-DD, local time) → one entry per day
  *             { date, status: 'held' | 'contact', mood: 1-5, urge: 0-10, note, time?, createdAt, updatedAt }
  *             `time` ("HH:MM") is only set for 'contact' entries: the moment the count restarts.
@@ -120,7 +122,7 @@ export async function exportData() {
 
 export async function importData(payload, { replace = true } = {}) {
   if (!payload || payload.app !== 'clear-days' || !Array.isArray(payload.checkins)) {
-    throw new Error('This file is not a Clear Days backup.');
+    throw new Error('This file is not a No Contact Dude backup.');
   }
   const valid = payload.checkins.filter((c) => /^\d{4}-\d{2}-\d{2}$/.test(c?.date) && ['held', 'contact'].includes(c.status));
   const urges = (Array.isArray(payload.urges) ? payload.urges : []).filter((u) => typeof u?.at === 'string' && !Number.isNaN(Date.parse(u.at)));

@@ -74,8 +74,9 @@ export function createRescue(ctx) {
   }
 
   /* ---------- open / close / navigation ---------- */
-  function open() {
+  function open(startStep = 0) {
     r = fresh();
+    r.step = Number.isInteger(startStep) && startStep >= 0 && startStep < STEPS ? startStep : 0;
     render();
     dlg.showModal();
     tick();
