@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Clear Days — No Contact Tracker</title>
+  <meta name="description" content="A private, offline-first No Contact tracker. Check-ins and streaks stay on your device.">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#2F4A3E" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141A17" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+  <!-- iOS home-screen support -->
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Clear Days">
+
+  <!-- Fonts (cached by the service worker for offline use; system fallbacks otherwise) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    // Apply saved theme before paint to avoid a flash.
+    (function () { try { var t = localStorage.getItem('cd-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {} })();
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to dashboard</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 512 512" width="32" height="32" aria-hidden="true">
+        <rect width="512" height="512" rx="112" fill="currentColor"/>
+        <path d="M136 312a120 120 0 0 1 240 0" fill="none" stroke="var(--color-bg)" stroke-width="40" stroke-linecap="round"/>
+        <path d="M104 372h304" stroke="var(--color-accent)" stroke-width="40" stroke-linecap="round"/>
+      </svg>
+      <span class="brand-name">Clear Days</span>
+    </div>
+    <div class="topbar-actions">
+      <span class="net-pill" id="netPill" role="status" aria-live="polite"><span class="dot"></span><span class="net-label">Online</span></span>
+      <button class="btn btn-ghost btn-sm" id="installBtn" hidden>
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Install
+      </button>
+      <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="icon-btn" id="settingsBtn" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Loading skeleton -->
+    <section id="loading" class="loading" aria-busy="true" aria-label="Loading">
+      <div class="skeleton sk-hero"></div><div class="skeleton sk-card"></div>
+    </section>
+
+    <!-- Onboarding -->
+    <section id="onboarding" class="onboarding card" hidden aria-labelledby="obTitle">
+      <p class="eyebrow">Welcome</p>
+      <h1 id="obTitle" class="display">Every day you hold the line counts.</h1>
+      <p class="muted">Clear Days keeps a private log of your No Contact journey. Nothing leaves this device — there's no account and no server.</p>
+      <form id="onboardForm" class="stack">
+        <label class="field">
+          <span class="field-label">When did No Contact begin?</span>
+          <input type="date" name="startDate" required>
+        </label>
+        <label class="field">
+          <span class="field-label">Your goal</span>
+          <select name="goal">
+            <option value="30">30 days</option>
+            <option value="60">60 days</option>
+            <option value="90" selected>90 days</option>
+            <option value="180">180 days</option>
+            <option value="365">1 year</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Why you're doing this <span class="optional">optional</span></span>
+          <textarea name="reason" rows="2" maxlength="200" placeholder="e.g. I deserve peace and room to heal."></textarea>
+          <span class="field-hint">Shown on your dashboard as a reminder on harder days.</span>
+        </label>
+        <button class="btn btn-primary btn-lg" type="submit">Start tracking</button>
+      </form>
+    </section>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="dashboard" hidden>
+      <section class="card hero" aria-labelledby="heroLabel">
+        <div class="hero-main">
+          <p class="eyebrow" id="heroLabel">Days of No Contact</p>
+          <p class="hero-number"><span id="daysCount">0</span><span class="hero-unit" id="daysUnit">days</span></p>
+          <p class="muted" id="sinceLabel"></p>
+          <blockquote class="reason" id="reasonQuote" hidden></blockquote>
+        </div>
+        <div class="hero-ring" aria-hidden="true">
+          <svg viewBox="0 0 120 120">
+            <circle class="ring-track" cx="60" cy="60" r="52"/>
+            <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="52"/>
+          </svg>
+          <div class="ring-label"><strong id="goalPct">0%</strong><span id="goalLabel">of 90 days</span></div>
+        </div>
+        <div class="milestone-bar">
+          <div class="milestone-head"><span>Next milestone</span><strong id="nextMilestone">—</strong></div>
+          <div class="bar" role="progressbar" aria-label="Progress to next milestone" aria-valuemin="0" aria-valuemax="100" id="milestoneBar"><span id="milestoneFill"></span></div>
+        </div>
+      </section>
+
+      <section class="card checkin" aria-labelledby="checkinTitle">
+        <div class="card-head">
+          <h2 id="checkinTitle">Today's check-in</h2>
+          <span class="badge" id="checkinBadge" hidden>Done</span>
+        </div>
+
+        <div id="checkinDone" class="checkin-done" hidden>
+          <p id="checkinSummary"></p>
+          <button class="btn btn-ghost" id="editTodayBtn">Edit today's entry</button>
+          <div class="urge-tips">
+            <h3>When the urge hits</h3>
+            <ul>
+              <li>Wait 20 minutes. Urges peak and pass.</li>
+              <li>Write what you'd say in a note here instead of sending it.</li>
+              <li>Message a friend who knows what you're working on.</li>
+              <li>Re-read your reason. You chose this for a good reason.</li>
+            </ul>
+          </div>
+        </div>
+
+        <form id="checkinForm" class="stack">
+          <fieldset class="status-choice">
+            <legend class="field-label">How did today go?</legend>
+            <label class="choice choice-held">
+              <input type="radio" name="status" value="held" checked>
+              <span><strong>I held No Contact</strong><small>No calls, texts, or checking their profiles</small></span>
+            </label>
+            <label class="choice choice-contact">
+              <input type="radio" name="status" value="contact">
+              <span><strong>I had contact</strong><small>Restarts the count — and that's okay</small></span>
+            </label>
+          </fieldset>
+
+          <fieldset class="mood">
+            <legend class="field-label">Mood</legend>
+            <div class="mood-row">
+              <label><input type="radio" name="mood" value="1"><span title="Very low">1</span></label>
+              <label><input type="radio" name="mood" value="2"><span title="Low">2</span></label>
+              <label><input type="radio" name="mood" value="3" checked><span title="Okay">3</span></label>
+              <label><input type="radio" name="mood" value="4"><span title="Good">4</span></label>
+              <label><input type="radio" name="mood" value="5"><span title="Great">5</span></label>
+            </div>
+            <div class="mood-scale"><span>Very low</span><span>Great</span></div>
+          </fieldset>
+
+          <label class="field">
+            <span class="field-label">Urge to reach out <output id="urgeOut">0</output>/10</span>
+            <input type="range" name="urge" min="0" max="10" value="0" id="urgeInput">
+          </label>
+
+          <div class="row-2">
+            <label class="field">
+              <span class="field-label">Date</span>
+              <input type="date" name="date" required>
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field-label">Note <span class="optional">optional</span></span>
+            <textarea name="note" rows="2" maxlength="500" placeholder="What helped today? What was hard?"></textarea>
+          </label>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit">Save check-in</button>
+            <button class="btn btn-ghost" type="button" id="cancelEditBtn" hidden>Cancel</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="stats" aria-label="Statistics">
+        <div class="card stat"><span class="stat-label">Longest run</span><span class="stat-value" id="statLongest">0</span><span class="stat-sub">days</span></div>
+        <div class="card stat"><span class="stat-label">Check-in streak</span><span class="stat-value" id="statStreak">0</span><span class="stat-sub">days in a row</span></div>
+        <div class="card stat"><span class="stat-label">Check-ins</span><span class="stat-value" id="statTotal">0</span><span class="stat-sub" id="statTotalSub">logged</span></div>
+        <div class="card stat"><span class="stat-label">Mood, last 7</span><span class="stat-value" id="statMood">—</span><span class="stat-sub" id="statUrge">avg urge —</span></div>
+      </section>
+
+      <section class="card calendar-card" aria-labelledby="calTitle">
+        <div class="card-head">
+          <h2 id="calTitle">Last 15 weeks</h2>
+          <div class="legend" aria-hidden="true">
+            <span><i class="sw sw-held"></i>Held</span>
+            <span><i class="sw sw-contact"></i>Contact</span>
+            <span><i class="sw sw-missed"></i>No entry</span>
+          </div>
+        </div>
+        <div class="calendar-wrap">
+          <div class="cal-days" aria-hidden="true"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span>Sun</span></div>
+          <div class="calendar" id="calendar" role="grid" aria-label="Check-in calendar"></div>
+        </div>
+      </section>
+
+      <section class="card milestones-card" aria-labelledby="msTitle">
+        <h2 id="msTitle">Milestones</h2>
+        <ul class="milestones" id="milestones"></ul>
+      </section>
+
+      <section class="card log-card" aria-labelledby="logTitle">
+        <div class="card-head"><h2 id="logTitle">Recent entries</h2></div>
+        <ul class="log" id="log"></ul>
+        <div class="empty" id="logEmpty" hidden>
+          <p><strong>No check-ins yet.</strong></p>
+          <p class="muted">Your first one takes about ten seconds.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Settings dialog -->
+  <dialog id="settingsDialog" aria-labelledby="settingsTitle">
+    <form method="dialog" id="settingsForm" class="stack">
+      <div class="card-head"><h2 id="settingsTitle">Settings</h2><button class="icon-btn" value="cancel" aria-label="Close">✕</button></div>
+      <label class="field"><span class="field-label">No Contact start date</span><input type="date" name="startDate" required></label>
+      <label class="field"><span class="field-label">Goal (days)</span><input type="number" name="goal" min="1" max="3650" required></label>
+      <label class="field"><span class="field-label">Your reason</span><textarea name="reason" rows="2" maxlength="200"></textarea></label>
+      <button class="btn btn-primary" value="save">Save settings</button>
+
+      <hr>
+      <h3>Your data</h3>
+      <p class="muted small" id="storageInfo">Stored privately in this browser with IndexedDB.</p>
+      <div class="btn-row">
+        <button class="btn btn-ghost" type="button" id="exportBtn">Export backup</button>
+        <label class="btn btn-ghost" for="importFile">Import backup</label>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+      </div>
+      <button class="btn btn-danger" type="button" id="resetBtn">Delete all data</button>
+      <p class="muted small" id="iosHint" hidden>On iPhone or iPad: tap Share, then “Add to Home Screen” to install.</p>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+    <span id="toastMsg"></span>
+    <button class="btn btn-sm btn-light" id="toastAction" hidden></button>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
