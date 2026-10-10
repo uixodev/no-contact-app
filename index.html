@@ -177,7 +177,9 @@
             <span class="orb-days" id="daysCount">0</span>
             <span class="orb-unit" id="daysUnit">days</span>
           </div>
+          <button type="button" class="orb-hit" id="orbBtn" aria-haspopup="dialog" aria-label="Open your days: pop a balloon for every day you kept"></button>
         </div>
+        <p class="orb-hint" aria-hidden="true">Tap the circle to play with your days</p>
 
         <div class="live-clock" id="liveClock" role="timer" aria-live="off" aria-label="Time since your last contact, updating every second">
           <span class="clock-unit"><b id="clkH">00</b><small>hours</small></span>
@@ -467,6 +469,25 @@
   </nav>
 
   <!-- Urgent help: a guided, step-by-step rescue for the peak of an urge. Steps are rendered by app.js. -->
+    <dialog id="daysDialog" class="days" aria-labelledby="daysTitle"><div class="days-inner">
+    <header class="days-top"><h2 id="daysTitle" tabindex="-1">Your days</h2>
+      <button class="icon-btn" type="button" id="daysClose" aria-label="Close">✕</button></header>
+    <div class="days-tabs" role="tablist" aria-label="Ways to see your time">
+      <button type="button" role="tab" id="tabBalloons" data-tab="balloons" aria-selected="true" aria-controls="panelBalloons">🎈 Balloons</button>
+      <button type="button" role="tab" id="tabSeconds" data-tab="seconds" aria-selected="false" aria-controls="panelSeconds" tabindex="-1">⏱️ Seconds</button>
+    </div>
+    <section id="panelBalloons" role="tabpanel" aria-labelledby="tabBalloons" class="days-panel">
+      <div class="balloon-bar"><strong id="balloonStatus" aria-live="polite"></strong><button type="button" class="btn btn-ghost btn-sm" id="balloonReset" hidden>Bring them back</button></div>
+      <div class="balloon-field" id="balloonField"></div>
+      <p class="balloon-note" id="balloonNote" aria-live="polite"></p>
+    </section>
+    <section id="panelSeconds" role="tabpanel" aria-labelledby="tabSeconds" class="days-panel" hidden>
+      <p class="sec-head"><b id="secNow">0 / 60</b> <span>seconds of this minute</span></p>
+      <div class="sec-grid" id="secGrid"></div>
+      <p class="balloon-note" id="secNote">Tap any dot. Each one is a second you didn’t reach out.</p>
+      <p class="sec-sum"><b id="secTotal">0</b> seconds · <b id="secMinutes">0</b> minutes of peace</p>
+    </section>
+  </div></dialog>
   <dialog id="urgentDialog" class="urgent" aria-labelledby="urgentTitle">
     <div class="rescue">
       <header class="rescue-top">
