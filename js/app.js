@@ -4,6 +4,7 @@ import { computeStats, buildCalendar, urgeStats, weekStrip, dailyGoal, insights,
 import { TAGS, WINS, SLEEP, ENERGY, PROMPTS, labelOf } from './tags.js';
 import { lineChart } from './charts.js';
 import { confetti } from './fx.js';
+import { createDays } from './days.js';
 
 const $ = (sel) => document.querySelector(sel);
 const fmtMoment = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -22,6 +23,7 @@ const PEAK_URGE = 8;                 // urge level (0–10) treated as a "peak"
 const state = { settings: {}, checkins: [], urges: [], editing: null, days: 0, anchorTs: null, logFilter: 'all', logLimit: LOG_PAGE, returnToEntry: null };
 
 // The guided "urgent help" flow lives in rescue.js; it gets what it needs from here.
+const daysPlay = createDays(() => ({ days: state.days, anchorTs: state.anchorTs ?? Date.now() }));
 const rescue = createRescue({
   settings: () => state.settings,
   anchorTs: () => state.anchorTs,
@@ -865,6 +867,7 @@ function bindUI() {
   $('#settingsDialog').addEventListener('close', onSettingsClose);
   $('#exportBtn').addEventListener('click', exportBackup);
   $('#importFile').addEventListener('change', importBackup);
+  $('#orbBtn').addEventListener('click', () => daysPlay.open());
   $('#resetBtn').addEventListener('click', resetAll);
   $('#themeBtn').addEventListener('click', toggleTheme);
 }
