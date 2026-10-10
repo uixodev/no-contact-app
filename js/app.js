@@ -277,14 +277,16 @@ function renderGoal(today) {
 
 /** The picked chips, text and note of an entry as HTML, shared by the "Done" card and the reading view. */
 /** A trigger's label; "Something else" shows the words you wrote, if any. */
-function triggerLabel(entry, t) {
-  return t === 'other' && entry.triggerOther ? `✨ ${entry.triggerOther}` : labelOf(TAGS, t);
+function triggerLabel(entry, t, short = true) {
+  const label = labelOf(TAGS, t);
+  return t === 'other' && entry.triggerOther && short ? `${label}: ${entry.triggerOther.length > 40 ? `${entry.triggerOther.slice(0, 40)}…` : entry.triggerOther}` : label;
 }
 
 function detailRows(entry, { note = true } = {}) {
   const rows = [];
-  const chips = (list, items) => items.length ? `<div class="chip-line">${items.map((v) => `<span class="mini-chip">${esc(list === TAGS ? triggerLabel(entry, v) : labelOf(list, v))}</span>`).join('')}</div>` : '';
+  const chips = (list, items) => items.length ? `<div class="chip-line">${items.map((v) => `<span class="mini-chip">${esc(labelOf(list, v))}</span>`).join('')}</div>` : '';
   if (entry.triggers?.length) rows.push(`<p class="detail-label">Triggers</p>${chips(TAGS, entry.triggers)}`);
+  if (entry.triggerOther && entry.triggers?.includes('other')) rows.push(`<p class="detail-label">What it was</p><p class="detail-text note-text">✨ ${esc(entry.triggerOther)}</p>`);
   if (entry.wins?.length) rows.push(`<p class="detail-label">Wins</p>${chips(WINS, entry.wins)}`);
   const body = [entry.sleep != null ? `😴 ${entry.sleep >= 9 ? '9h+' : entry.sleep <= 4 ? '≤4h' : `${entry.sleep}h`} sleep` : '', entry.energy != null ? `${ENERGY[entry.energy - 1][1]} ${ENERGY[entry.energy - 1][2]} energy` : ''].filter(Boolean);
   if (body.length) rows.push(`<p class="detail-label">Body</p><div class="chip-line">${body.map((t) => `<span class="mini-chip">${esc(t)}</span>`).join('')}</div>`);
@@ -373,6 +375,7 @@ function fillForm(entry) {
   const setGroup = (name, values) => f.querySelectorAll(`input[name="${name}"]`).forEach((i) => { i.checked = values.includes(i.value); });
   setGroup('trigger', entry.triggers ?? []);
   f.triggerOther.value = entry.triggerOther ?? '';
+  $('#triggerOtherCount').textContent = f.triggerOther.value.length;
   syncTriggerOther();
   setGroup('win', entry.wins ?? []);
   setGroup('sleep', entry.sleep != null ? [String(entry.sleep)] : []);
@@ -399,6 +402,7 @@ function autosizeAll() { document.querySelectorAll('#checkinForm textarea.autosi
 function syncTriggerOther() {
   const on = !!$('#checkinForm input[name="trigger"][value="other"]')?.checked;
   $('#triggerOtherField').hidden = !on;
+  if (on) requestAnimationFrame(() => autosize($('#checkinForm').triggerOther));
 }
 
 /** The little "2 selected" badges on the collapsible sections. */
@@ -844,6 +848,7 @@ function bindUI() {
   });
   cf.note.addEventListener('input', () => { $('#noteCount').textContent = cf.note.value.length; autosize(cf.note); });
   cf.good.addEventListener('input', () => autosize(cf.good));
+  cf.triggerOther.addEventListener('input', () => { $('#triggerOtherCount').textContent = cf.triggerOther.value.length; autosize(cf.triggerOther); });
   cf.tomorrow.addEventListener('input', () => autosize(cf.tomorrow));
   cf.addEventListener('toggle', autosizeAll, true);           // sections opening (toggle does not bubble)
   window.addEventListener('resize', autosizeAll);
