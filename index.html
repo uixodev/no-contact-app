@@ -484,9 +484,9 @@
   <!-- Urgent help: a guided, step-by-step rescue for the peak of an urge. Steps are rendered by app.js. -->
       <dialog id="gameDialog" class="game" aria-labelledby="gameTitle"><div class="game-inner">
     <header class="game-top">
-      <button class="icon-btn" type="button" id="gameBack" aria-label="Back to games" hidden>←</button>
+      <button class="game-nav" type="button" id="gameBack" aria-label="Back to games" hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <h2 id="gameTitle" tabindex="-1">Distract me</h2>
-      <button class="icon-btn" type="button" id="gameClose" aria-label="Close">✕</button>
+      <button class="game-nav" type="button" id="gameClose" aria-label="Close"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
     </header>
     <section id="gameMenu" class="game-view">
       <p class="muted">Pick one. All of them are calm, and none can be lost for good.</p>
@@ -506,11 +506,11 @@
       <div class="game-bar"><span>Score <strong id="mergeScore">0</strong></span><span>Best <strong id="mergeBest">0</strong></span></div>
       <div class="merge-board" id="mergeBoard" role="group" aria-label="Merge board"></div>
       <p class="balloon-note" id="mergeNote" aria-live="polite"></p>
-      <div class="merge-pad" aria-label="Move buttons">
-        <button type="button" class="btn btn-ghost btn-sm" data-move="up" aria-label="Move up">↑</button>
-        <button type="button" class="btn btn-ghost btn-sm" data-move="left" aria-label="Move left">←</button>
-        <button type="button" class="btn btn-ghost btn-sm" data-move="down" aria-label="Move down">↓</button>
-        <button type="button" class="btn btn-ghost btn-sm" data-move="right" aria-label="Move right">→</button>
+      <div class="merge-pad" role="group" aria-label="Move buttons">
+        <button type="button" class="pad-btn pad-up" data-move="up" aria-label="Move up"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="pad-btn pad-left" data-move="left" aria-label="Move left"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="pad-btn pad-down" data-move="down" aria-label="Move down"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="pad-btn pad-right" data-move="right" aria-label="Move right"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
       <div class="game-actions"><button type="button" class="btn btn-ghost btn-sm" id="mergeNew">New game</button></div>
     </section>
