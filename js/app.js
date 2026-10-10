@@ -1,5 +1,6 @@
 import * as db from './db.js';
-import { computeStats, buildCalendar, splitElapsed, formatElapsed, toTimestamp, toKey, fromKey, MILESTONES } from './streaks.js';
+import { createRescue } from './rescue.js';
+import { computeStats, buildCalendar, urgeStats, splitElapsed, formatElapsed, toTimestamp, toKey, fromKey, MILESTONES } from './streaks.js';
 
 const $ = (sel) => document.querySelector(sel);
 const fmtMoment = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -9,13 +10,21 @@ const MOOD_EMOJI = ['🙂', '😞', '😕', '😐', '🙂', '😄'];
 const RING_LEN = 2 * Math.PI * 112; // matches the r="112" progress ring around the orb
 
 const PEAK_URGE = 8;                 // urge level (0–10) treated as a "peak"
-const WAIT_MS = 20 * 60 * 1000;      // "wait it out" timer
-const BREATH_PHASES = [['Breathe in…', 4], ['Hold…', 4], ['Breathe out slowly…', 6]];
-const BREATH_CYCLE = BREATH_PHASES.reduce((n, [, secs]) => n + secs, 0);
 
 // anchorTs = the exact moment the current No Contact run began (ms); days = whole days elapsed since then.
-const state = { settings: {}, checkins: [], editing: null, days: 0, anchorTs: null };
-const urgent = { openedAt: 0, waitEnd: null, waitState: 'idle' }; // waitState: idle | running | done
+const state = { settings: {}, checkins: [], urges: [], editing: null, days: 0, anchorTs: null };
+
+// The guided "urgent help" flow lives in rescue.js; it gets what it needs from here.
+const rescue = createRescue({
+  settings: () => state.settings,
+  anchorTs: () => state.anchorTs,
+  toast: (msg) => toast(msg),
+  urgesCount: () => state.urges.length,
+  saveUrge: async (rec) => { await db.saveUrge(rec); state.urges.push(rec); render(); },
+  openCheckin: (level) => openCheckinWithUrge(level),
+  canKeepNote: () => { const f = $('#checkinForm'); return !f.hidden && f.date.value === toKey(); },
+  keepInNote: (text) => { const f = $('#checkinForm'); f.note.value = f.note.value ? `${f.note.value}\n\n${text}` : text; f.dataset.dirty = '1'; },
+});
 
 const pad2 = (n) => String(n).padStart(2, '0');
 const nowTime = () => { const d = new Date(); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
@@ -49,7 +58,7 @@ async function init() {
   const tick = () => {
     if (toKey() !== lastDay) { lastDay = toKey(); render(); }
     updateClock();
-    updateUrgent();
+    rescue.tick();
   };
   const loop = () => { tick(); setTimeout(loop, 1000 - (Date.now() % 1000) + 5); };
   loop();
@@ -57,9 +66,10 @@ async function init() {
 }
 
 async function load() {
-  const [settings, checkins] = await Promise.all([db.getAllSettings(), db.getAllCheckins()]);
+  const [settings, checkins, urges] = await Promise.all([db.getAllSettings(), db.getAllCheckins(), db.getAllUrges()]);
   state.settings = settings;
   state.checkins = checkins;
+  state.urges = urges;
 }
 
 function fillMascots() {
@@ -122,6 +132,10 @@ function render() {
   $('#statMood').textContent = s.avgMood7 == null ? '—' : s.avgMood7.toFixed(1);
   $('#statMoodIco').textContent = s.avgMood7 == null ? '🙂' : MOOD_EMOJI[Math.round(s.avgMood7)];
   $('#statUrge').textContent = s.avgUrge7 == null ? 'avg urge —' : `avg urge ${s.avgUrge7.toFixed(1)}/10`;
+  const u = urgeStats(state.urges);
+  $('#statUrgesSurvived').textContent = u.survived;
+  $('#statRelief').textContent = u.avgRelief == null ? '—' : `${u.avgRelief >= 0 ? '↓' : '↑'} ${Math.abs(u.avgRelief).toFixed(1)}`;
+  $('#statReliefSub').textContent = u.avgRelief == null ? 'finish urgent help to see' : u.avgRelief >= 0 ? 'urge points dropped' : 'urge points higher';
 
   renderCheckin(today);
   renderCalendar(today);
@@ -253,79 +267,22 @@ function renderLog() {
   }));
 }
 
-/* ---------------- Urgent help ---------------- */
+/** Show the "that's a peak" nudge when the urge slider is high. */
 function updateUrgeAlert() {
   $('#urgeAlert').hidden = Number($('#urgeInput').value) < PEAK_URGE;
 }
 
-function openUrgent() {
-  const reason = state.settings.reason?.trim();
-  $('#urgentReason').hidden = !reason;
-  $('#urgentReason').textContent = reason ? `“${reason}”` : '';
-  urgent.openedAt = performance.now();
-  $('#urgentDialog').showModal();
-  updateUrgent(); // after showModal(), so the live time is correct from the first frame
-}
-
-function closeUrgent() { $('#urgentDialog').close(); }
-
-function toggleWait() {
-  if (urgent.waitState === 'running') { urgent.waitState = 'idle'; urgent.waitEnd = null; }
-  else { urgent.waitState = 'running'; urgent.waitEnd = Date.now() + WAIT_MS; }
-  updateUrgent();
-}
-
-const mmss = (ms) => {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
-};
-
-/** Runs every second: finishes the wait timer even if the dialog is closed, and refreshes the dialog if open. */
-function updateUrgent() {
-  if (urgent.waitState === 'running' && Date.now() >= urgent.waitEnd) {
-    urgent.waitState = 'done';
-    urgent.waitEnd = null;
-    navigator.vibrate?.([120, 60, 120]);
-    if (!$('#urgentDialog').open) toast('20 minutes passed. You rode it out — how does the urge feel now?');
-  }
-  const dlg = $('#urgentDialog');
-  if (!dlg.open) return;
-
-  $('#urgentTime').textContent = state.anchorTs == null ? '' : formatElapsed(splitElapsed(Date.now() - state.anchorTs));
-
-  // Breathing label (the orb is animated in CSS on the same cycle, restarted each time the dialog opens)
-  let t = ((performance.now() - urgent.openedAt) / 1000) % BREATH_CYCLE;
-  for (const [label, secs] of BREATH_PHASES) {
-    if (t < secs) { $('#breathLabel').textContent = label; break; }
-    t -= secs;
-  }
-
-  const running = urgent.waitState === 'running';
-  $('#waitTime').textContent = running ? mmss(urgent.waitEnd - Date.now()) : urgent.waitState === 'done' ? '0:00 ✓' : mmss(WAIT_MS);
-  $('#waitBtn').textContent = running ? 'Cancel wait' : urgent.waitState === 'done' ? 'Wait another 20 minutes' : 'Start 20-minute wait';
-  $('#waitNote').textContent = urgent.waitState === 'done'
-    ? 'You made it through 20 minutes. How does the urge feel now?'
-    : 'Urges peak and pass. Don’t decide anything until the timer ends.';
-}
-
-function holdOn() {
-  closeUrgent();
-  toast('You’re doing it. Every second COUNTS!');
-  navigator.vibrate?.(15);
-}
-
 /**
- * Take the user to today's check-in with the urge raised to (at least) a peak so it gets logged.
+ * Take the user to today's check-in with the urge raised to (at least) the given level so it gets logged.
  * If today's form is already open we keep whatever they've typed; we only reset it when today
  * was already saved and has to be reopened for editing.
  */
-function logUrge() {
-  closeUrgent();
+function openCheckinWithUrge(level = PEAK_URGE) {
   const today = toKey();
   const f = $('#checkinForm');
   if (f.hidden || f.date.value !== today) startEdit(today);
   else f.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  const urge = Math.max(Number(f.urge.value) || 0, PEAK_URGE);
+  const urge = Math.max(Number(f.urge.value) || 0, level);
   f.urge.value = urge;
   $('#urgeOut').textContent = urge;
   f.dataset.dirty = '1';
@@ -406,6 +363,8 @@ function openSettings() {
   f.startTime.setCustomValidity('');
   f.goal.value = state.settings.goal ?? 90;
   f.reason.value = state.settings.reason ?? '';
+  f.friendName.value = state.settings.friendName ?? '';
+  f.friendPhone.value = state.settings.friendPhone ?? '';
   $('#iosHint').hidden = !isIOS() || isStandalone();
   updateStorageInfo();
   $('#settingsDialog').showModal();
@@ -432,6 +391,8 @@ async function onSettingsClose() {
   await db.setSetting('startTime', f.startTime.value);
   await db.setSetting('goal', Math.max(1, Number(f.goal.value) || 90));
   await db.setSetting('reason', f.reason.value.trim());
+  await db.setSetting('friendName', f.friendName.value.trim());
+  await db.setSetting('friendPhone', f.friendPhone.value.trim());
   await load(); render();
   toast('Settings saved');
 }
@@ -493,12 +454,9 @@ function bindUI() {
   cf.addEventListener('input', () => { cf.dataset.dirty = '1'; });
   cf.addEventListener('change', (e) => { if (e.target.name === 'status') onStatusChange(); });
   $('#urgeInput').addEventListener('input', (e) => { $('#urgeOut').textContent = e.target.value; updateUrgeAlert(); });
-  $('#urgentBtn').addEventListener('click', openUrgent);
-  $('#urgeAlertBtn').addEventListener('click', openUrgent);
-  $('#urgentClose').addEventListener('click', closeUrgent);
-  $('#waitBtn').addEventListener('click', toggleWait);
-  $('#holdingBtn').addEventListener('click', holdOn);
-  $('#logUrgeBtn').addEventListener('click', logUrge);
+  $('#urgentBtn').addEventListener('click', rescue.open);
+  $('#urgeAlertBtn').addEventListener('click', rescue.open);
+  $('#urgentClose').addEventListener('click', rescue.close);
   $('#editTodayBtn').addEventListener('click', () => startEdit(toKey()));
   $('#cancelEditBtn').addEventListener('click', () => { state.editing = null; delete cf.dataset.dirty; render(); });
   $('#settingsBtn').addEventListener('click', openSettings);

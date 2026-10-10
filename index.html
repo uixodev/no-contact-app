@@ -245,6 +245,8 @@
         <div class="stat"><span class="stat-ico" aria-hidden="true">🔥</span><span class="stat-value" id="statStreak">0</span><span class="stat-label">Check-in streak</span><span class="stat-sub">days in a row</span></div>
         <div class="stat"><span class="stat-ico" aria-hidden="true">✅</span><span class="stat-value" id="statTotal">0</span><span class="stat-label">Check-ins</span><span class="stat-sub" id="statTotalSub">logged</span></div>
         <div class="stat"><span class="stat-ico" id="statMoodIco" aria-hidden="true">🙂</span><span class="stat-value" id="statMood">—</span><span class="stat-label">Mood, last 7</span><span class="stat-sub" id="statUrge">avg urge —</span></div>
+        <div class="stat"><span class="stat-ico" aria-hidden="true">🛡️</span><span class="stat-value" id="statUrgesSurvived">0</span><span class="stat-label">Urges survived</span><span class="stat-sub">with urgent help</span></div>
+        <div class="stat"><span class="stat-ico" aria-hidden="true">🌊</span><span class="stat-value" id="statRelief">—</span><span class="stat-label">Average relief</span><span class="stat-sub" id="statReliefSub">urge points dropped</span></div>
       </section>
 
       <section class="card calendar-card" aria-labelledby="calTitle">
@@ -289,47 +291,19 @@
     </div>
   </main>
 
-  <!-- Urgent help: shown when the urge to reach out is at its peak -->
+  <!-- Urgent help: a guided, step-by-step rescue for the peak of an urge. Steps are rendered by app.js. -->
   <dialog id="urgentDialog" class="urgent" aria-labelledby="urgentTitle">
-    <div class="stack">
-      <div class="card-head">
-        <div>
-          <p class="eyebrow urgent-eyebrow">Urgent · urge peak</p>
-          <h2 id="urgentTitle" class="display">Pause. This wave will pass.</h2>
-        </div>
-        <button class="icon-btn" type="button" id="urgentClose" aria-label="Close">✕</button>
-      </div>
-
-      <p class="urgent-stake">You’ve held <strong id="urgentTime">0 days 00:00:00</strong>. Every second <strong class="hl">COUNTS!</strong></p>
-      <blockquote class="reason" id="urgentReason" hidden></blockquote>
-
-      <section class="urgent-step" aria-labelledby="breathTitle">
-        <h3 id="breathTitle"><span class="step-num">1</span> Breathe</h3>
-        <div class="breath" aria-hidden="true"><div class="breath-orb"></div></div>
-        <p class="breath-label" id="breathLabel">Breathe in…</p>
-      </section>
-
-      <section class="urgent-step" aria-labelledby="waitTitle">
-        <h3 id="waitTitle"><span class="step-num">2</span> Wait 20 minutes</h3>
-        <p class="muted small" id="waitNote">Urges peak and pass. Don’t decide anything until the timer ends.</p>
-        <p class="wait-time" id="waitTime">20:00</p>
-        <button class="btn btn-ghost" type="button" id="waitBtn">Start 20-minute wait</button>
-      </section>
-
-      <section class="urgent-step" aria-labelledby="insteadTitle">
-        <h3 id="insteadTitle"><span class="step-num">3</span> Do something else</h3>
-        <ul class="urge-list">
-          <li>Put your phone in another room, or mute and archive their chat.</li>
-          <li>Write what you’d say in your check-in note instead of sending it.</li>
-          <li>Message a friend who knows what you’re working on.</li>
-          <li>Walk outside, drink some water, or splash cold water on your face.</li>
-        </ul>
-      </section>
-
-      <div class="urgent-actions">
-        <button class="btn btn-primary" type="button" id="holdingBtn">I’m holding on</button>
-        <button class="btn btn-ghost" type="button" id="logUrgeBtn">Log this urge</button>
-      </div>
+    <div class="rescue">
+      <header class="rescue-top">
+        <button class="icon-btn" type="button" id="urgentClose" aria-label="Close urgent help">✕</button>
+        <div class="rescue-progress" id="rescueProgress" role="progressbar" aria-label="Urgent help progress" aria-valuemin="1"></div>
+        <span class="rescue-count" id="rescueCount" aria-hidden="true">1/7</span>
+      </header>
+      <div class="rescue-body" id="rescueBody"></div>
+      <footer class="rescue-foot">
+        <button class="btn btn-ghost" type="button" id="rescueBack">Back</button>
+        <button class="btn btn-primary" type="button" id="rescueNext">Continue</button>
+      </footer>
     </div>
   </dialog>
 
@@ -347,6 +321,14 @@
       </fieldset>
       <label class="field"><span class="field-label">Goal (days)</span><input type="number" name="goal" min="1" max="3650" required></label>
       <label class="field"><span class="field-label">Your reason</span><textarea name="reason" rows="2" maxlength="200"></textarea></label>
+      <fieldset class="field-group">
+        <legend class="field-label">A trusted person <span class="optional">optional</span></legend>
+        <div class="row-2">
+          <label class="field"><span class="field-sub">Name</span><input type="text" name="friendName" maxlength="30" autocomplete="off" placeholder="e.g. Sam"></label>
+          <label class="field"><span class="field-sub">Phone</span><input type="tel" name="friendPhone" maxlength="20" autocomplete="off" inputmode="tel" placeholder="+44 7…"></label>
+        </div>
+        <span class="field-hint">Shown as one-tap “Text” and “Call” buttons in urgent help. Stays on this device.</span>
+      </fieldset>
       <button class="btn btn-primary btn-block" value="save">Save settings</button>
 
       <hr>

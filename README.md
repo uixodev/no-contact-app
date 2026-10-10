@@ -7,7 +7,7 @@ A Progressive Web App built with plain HTML, CSS and JavaScript. You can install
 - **Exact time:** set the date *and time* you last spoke (onboarding or Settings). The counter runs from that exact moment, and a "had contact" check-in can carry its own time so a slip restarts the count from the real moment.
 - **Duolingo-style design:** chunky 3D buttons, option cards, emoji moods, a friendly sprout mascot, medals for milestones, and light and dark themes. The scroll bar is hidden on phones.
 - **Dashboard:** your check-in streak in the top bar, longest run, average mood and urge over the last 7 check-ins, a 15-week heatmap, milestones and recent entries.
-- **Urgent help (at the very end of the page):** an "I want to reach out right now" button, also offered automatically when you set the urge slider to 8 or more. It opens a calming screen with your live time at stake, your reason, a breathing guide, a 20-minute wait timer, things to do instead, and a shortcut to log the urge.
+- **Urgent help (at the very end of the page):** an "I want to reach out right now" button, also offered automatically when you set the urge slider to 8 or more. It opens a guided, full-screen, seven-step rescue led by the mascot, with a progress bar and a Continue button pinned at the bottom: (1) rate how strong the urge is and tag what's pulling at you, (2) three rounds of guided 4-4-6 breathing, (3) a tap-along 5-4-3-2-1 grounding exercise, (4) tap-to-reveal reality-check cards showing your own reason and your live time held, (5) write what you want to say and "let it go" (it is never saved or sent), (6) pick an activity and run a 5, 10 or 20 minute wave timer, with one-tap Text and Call buttons for a trusted person, and (7) rate the urge again to see how far it dropped, with confetti. Finishing records the urge, which feeds the "Urges survived" and "Average relief" stats.
 - **Daily check-in:** choose held or had contact, then add mood (1–5), urge level (0–10) and an optional note. You can edit any past day by clicking it on the heatmap or in the log.
 - **Installable:** includes a web app manifest, a custom install button (`beforeinstallprompt`), an iOS "Add to Home Screen" hint, maskable icons and a home-screen shortcut ("Check in today").
 - **Offline:** the service worker precaches the app shell, loads pages network-first with a cached fallback, caches fonts with stale-while-revalidate, and shows an "Update ready" prompt when a new version is available.
@@ -22,8 +22,9 @@ manifest.webmanifest   Install metadata (name, icons, colours, shortcuts)
 sw.js                  Service worker (precache plus runtime caching)
 css/styles.css         Responsive, mobile-first styles and theme tokens
 js/db.js               Promise wrapper around IndexedDB (check-ins, settings, backup)
-js/streaks.js          Pure date and streak logic (no DOM, easy to unit-test)
+js/streaks.js          Pure date, streak and urge-stats logic (no DOM, easy to unit-test)
 js/app.js              UI rendering, events, SW registration, install prompt
+js/rescue.js           The guided urgent-help flow (seven steps, wave timer, breathing)
 icons/                 SVG and PNG icons (192, 512, maskable, Apple touch, favicon)
 ```
 
@@ -36,11 +37,12 @@ python3 -m http.server 8080      # or: npx serve .
 ```
 To test offline in Chrome, open DevTools, go to Application > Service Workers and tick "Offline", then reload.
 
-## Data model (IndexedDB `clear-days`, version 1)
+## Data model (IndexedDB `clear-days`, version 2)
 | Store | Key | Record |
 |---|---|---|
 | `checkins` | `date` (`YYYY-MM-DD`, local time) | `{ date, status: 'held'\|'contact', mood, urge, note, time?, createdAt, updatedAt }` (`time` only on contact entries) |
-| `settings` | `key` | `{ key, value }` holding `startDate`, `startTime` (`HH:MM`), `goal`, `reason` |
+| `settings` | `key` | `{ key, value }` holding `startDate`, `startTime` (`HH:MM`), `goal`, `reason`, `friendName`, `friendPhone` |
+| `urges` | `at` (ISO time) | `{ at, before, after, tags[], activity, waitedMin }`, one per urge finished in urgent help (added in version 2; existing data is kept on upgrade) |
 
 Each day has one check-in because the date is the key, so saving again replaces that day's entry.
 
