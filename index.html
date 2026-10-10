@@ -422,6 +422,15 @@
         </button>
       </section>
 
+        <section class="card game-card" aria-labelledby="gameCardTitle">
+          <h2 id="gameCardTitle">Distract me</h2>
+          <p class="muted small">Give your hands and mind something else to do for a few minutes. The urge will pass.</p>
+          <div class="tools">
+            <button type="button" class="tool" id="playMemory"><span class="tool-ico" aria-hidden="true">🃏</span><strong>Memory match</strong><small>Find the pairs, no timer</small></button>
+            <button type="button" class="tool" id="playMerge"><span class="tool-ico" aria-hidden="true">🔢</span><strong>Merge</strong><small>Swipe and combine numbers</small></button>
+          </div>
+        </section>
+
         <section class="card tools-card" aria-labelledby="toolsTitle">
           <h2 id="toolsTitle">Quick tools</h2>
           <p class="muted small">Jump straight to one thing if you don’t need the whole rescue.</p>
@@ -470,7 +479,37 @@
   </nav>
 
   <!-- Urgent help: a guided, step-by-step rescue for the peak of an urge. Steps are rendered by app.js. -->
-    <dialog id="daysDialog" class="days" aria-labelledby="daysTitle"><div class="days-inner">
+      <dialog id="gameDialog" class="game" aria-labelledby="gameTitle"><div class="game-inner">
+    <header class="game-top">
+      <button class="icon-btn" type="button" id="gameBack" aria-label="Back to games" hidden>←</button>
+      <h2 id="gameTitle" tabindex="-1">Distract me</h2>
+      <button class="icon-btn" type="button" id="gameClose" aria-label="Close">✕</button>
+    </header>
+    <section id="gameMenu" class="game-view">
+      <p class="muted">Pick one. Both are calm, and neither can be lost for good.</p>
+      <button type="button" class="game-pick" id="gamePickMemory"><span aria-hidden="true">🃏</span><strong>Memory match</strong><small>Flip cards and find the pairs. Four levels, no timer.</small></button>
+      <button type="button" class="game-pick" id="gamePickMerge"><span aria-hidden="true">🔢</span><strong>Merge</strong><small>Swipe the tiles and combine equal numbers. Chase your best score.</small></button>
+    </section>
+    <section id="gameMemory" class="game-view" hidden>
+      <div class="game-bar"><strong id="memLevel">Level 1</strong><span id="memMoves" aria-live="polite">0 moves</span></div>
+      <div class="mem-board" id="memBoard"></div>
+      <p class="balloon-note" id="memNote" aria-live="polite"></p>
+      <div class="game-actions"><button type="button" class="btn btn-ghost btn-sm" id="memRestart">Shuffle again</button><button type="button" class="btn btn-primary btn-sm" id="memNext" hidden>Next level →</button></div>
+    </section>
+    <section id="gameMerge" class="game-view" hidden>
+      <div class="game-bar"><span>Score <strong id="mergeScore">0</strong></span><span>Best <strong id="mergeBest">0</strong></span></div>
+      <div class="merge-board" id="mergeBoard" role="group" aria-label="Merge board"></div>
+      <p class="balloon-note" id="mergeNote" aria-live="polite"></p>
+      <div class="merge-pad" aria-label="Move buttons">
+        <button type="button" class="btn btn-ghost btn-sm" data-move="up" aria-label="Move up">↑</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-move="left" aria-label="Move left">←</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-move="down" aria-label="Move down">↓</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-move="right" aria-label="Move right">→</button>
+      </div>
+      <div class="game-actions"><button type="button" class="btn btn-ghost btn-sm" id="mergeNew">New game</button></div>
+    </section>
+  </div></dialog>
+  <dialog id="daysDialog" class="days" aria-labelledby="daysTitle"><div class="days-inner">
     <header class="days-top"><h2 id="daysTitle" tabindex="-1">Your days</h2>
       <button class="icon-btn" type="button" id="daysClose" aria-label="Close">✕</button></header>
     <div class="days-tabs" role="tablist" aria-label="Ways to see your time">
