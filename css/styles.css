@@ -135,7 +135,6 @@ button, a, label, [role='button'] { touch-action: manipulation; }
 .m-leaf-r { animation-delay: -3s; }
 @keyframes bob { 50% { transform: translateY(-3px) scale(1.01, .99); } }
 @keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.08); } }
-@keyframes sway { 50% { transform: rotate(4deg); } }
 .mascot-lg { width: 112px; height: 112px; justify-self: center; }
 .mascot-md { width: 88px; height: 88px; justify-self: center; }
 
@@ -874,17 +873,9 @@ dialog.edit .edit-inner, dialog.entry, dialog.days .days-inner { overscroll-beha
 .days-tabs [role=tab] span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 380px) { .days-tabs [role=tab] { font-size: .68rem; letter-spacing: -.02em; } }
 #panelPeace { overflow-y: auto; }
-.peace-scene { position: relative; flex: none; height: 200px; border-radius: var(--radius-md); overflow: hidden; background: linear-gradient(180deg, #1b2a52 0%, #3a5f9a 55%, #7fb5d6 100%); isolation: isolate; }
-.sea { position: absolute; top: 0; left: -6%; width: 112%; height: 100%; z-index: 0; }
-.wave { transform-origin: 50% 100%; animation: sway 9s ease-in-out infinite; }
-.w1 { fill: rgb(255 255 255 / .16); }
-.w2 { fill: rgb(120 200 230 / .35); animation-duration: 12s; animation-direction: reverse; }
-.w3 { fill: rgb(40 110 160 / .55); animation-duration: 15s; }
-@keyframes sway { 0%, 100% { transform: translateX(-3%) scaleY(1); } 50% { transform: translateX(3%) scaleY(1.08); } }
-.moon { position: absolute; top: 16px; right: 24px; width: 34px; height: 34px; border-radius: 50%; background: #fff7d6; box-shadow: 0 0 30px 10px rgb(255 247 214 / .35); animation: moonglow 7s ease-in-out infinite; z-index: 0; }
-@keyframes moonglow { 50% { box-shadow: 0 0 44px 16px rgb(255 247 214 / .5); } }
-.peace-big { position: absolute; inset: 0; z-index: 1; display: grid; place-content: center; justify-items: center; text-align: center; padding: 0 var(--space-3); color: #fff; text-shadow: 0 2px 12px rgb(10 20 50 / .5); }
-.peace-big b { font-size: clamp(1.9rem, 10vw, 2.8rem); font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.1; overflow-wrap: anywhere; }
+.peace-scene { flex: none; display: grid; gap: var(--space-2); padding: var(--space-3); border-radius: var(--radius-md); background: linear-gradient(180deg, #141a3a 0%, #1d2b57 100%); min-width: 0; }
+.peace-big { display: grid; justify-items: center; text-align: center; color: #fff; }
+.peace-big b { font-size: clamp(1.7rem, 9vw, 2.4rem); font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.1; overflow-wrap: anywhere; }
 .peace-big span { font-weight: 800; letter-spacing: .04em; }
 .peace-lead { margin: 0; font-weight: 800; color: var(--color-muted); text-align: center; }
 .peace-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
@@ -896,4 +887,9 @@ dialog.edit .edit-inner, dialog.entry, dialog.days .days-inner { overscroll-beha
 @keyframes heartbeat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.18); } 30% { transform: scale(1); } 45% { transform: scale(1.1); } }
 .pz-breath::before { content: ''; width: 16px; height: 16px; border-radius: 50%; background: var(--green); animation: breathe-dot 5s ease-in-out infinite; }
 @keyframes breathe-dot { 0%, 100% { transform: scale(.7); opacity: .6; } 50% { transform: scale(1.5); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .wave, .moon, .pz-heart, .pz-breath::before { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .pz-heart, .pz-breath::before { animation: none; } }
+.mosaic-host { width: 100%; aspect-ratio: 1; min-width: 0; line-height: 0; }
+.mosaic-host canvas { display: block; width: 100% !important; height: auto !important; aspect-ratio: 1; touch-action: manipulation; cursor: pointer; }
+.mosaic-legend { margin: 0; min-height: 2.6em; text-align: center; color: #cfd8ff; font-weight: 700; font-size: var(--text-sm); overflow-wrap: anywhere; }
+.mosaic-bar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+@keyframes sway { 50% { transform: rotate(4deg); } }
