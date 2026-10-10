@@ -475,12 +475,18 @@
       <button class="icon-btn" type="button" id="daysClose" aria-label="Close">✕</button></header>
     <div class="days-tabs" role="tablist" aria-label="Ways to see your time">
       <button type="button" role="tab" id="tabBalloons" data-tab="balloons" aria-selected="true" aria-controls="panelBalloons">🎈 Balloons</button>
+      <button type="button" role="tab" id="tabCandles" data-tab="candles" aria-selected="false" aria-controls="panelCandles" tabindex="-1">🕯️ Candles</button>
       <button type="button" role="tab" id="tabSeconds" data-tab="seconds" aria-selected="false" aria-controls="panelSeconds" tabindex="-1">⏱️ Seconds</button>
     </div>
     <section id="panelBalloons" role="tabpanel" aria-labelledby="tabBalloons" class="days-panel">
       <div class="balloon-bar"><strong id="balloonStatus" aria-live="polite"></strong><button type="button" class="btn btn-ghost btn-sm" id="balloonReset" hidden>Bring them back</button></div>
       <div class="balloon-field" id="balloonField"></div>
       <p class="balloon-note" id="balloonNote" aria-live="polite"></p>
+    </section>
+    <section id="panelCandles" role="tabpanel" aria-labelledby="tabCandles" class="days-panel" hidden>
+      <div class="balloon-bar"><strong id="candleStatus" aria-live="polite"></strong><span class="bar-btns"><button type="button" class="btn btn-ghost btn-sm" id="candleAll">Light all</button><button type="button" class="btn btn-ghost btn-sm" id="candleReset" hidden>Blow out</button></span></div>
+      <div class="candle-room" id="candleRoom"><div class="candle-field" id="candleField"></div></div>
+      <p class="balloon-note" id="candleNote" aria-live="polite"></p>
     </section>
     <section id="panelSeconds" role="tabpanel" aria-labelledby="tabSeconds" class="days-panel" hidden>
       <p class="sec-head"><b id="secNow">0 / 60</b> <span>seconds of this minute</span></p>
