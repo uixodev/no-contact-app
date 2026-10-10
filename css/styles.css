@@ -848,3 +848,21 @@ dialog.days[open] { display: flex; }
 .pick input { top: 0; left: 0; width: 1px; height: 1px; }
 dialog.edit .edit-inner, dialog.entry, dialog.days .days-inner { overscroll-behavior: contain; }
 .pick { position: relative; }
+
+/* ---------- Your days: candles ---------- */
+.days-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.days-tabs [role=tab] { padding: 0 var(--space-1); font-size: var(--text-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-btns { display: flex; gap: var(--space-2); }
+.candle-room { flex: 1; min-height: 0; overflow-y: auto; border-radius: var(--radius-md); background: radial-gradient(ellipse at 50% 0%, #2a2350, #12102b 70%); transition: box-shadow 1s, background 1s; }
+.candle-room.glow { background: radial-gradient(ellipse at 50% 30%, #6b4a1f, #1c1430 75%); box-shadow: inset 0 0 60px rgb(255 190 80 / .3); }
+.candle-field { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: var(--space-3) var(--space-1); padding: var(--space-4) var(--space-3); align-content: start; }
+.candle { position: relative; height: 96px; border: 0; background: none; padding: 0; cursor: pointer; display: grid; justify-items: center; align-content: end; -webkit-tap-highlight-color: transparent; }
+.candle .c-flame { position: absolute; bottom: 62px; width: 14px; height: 24px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: radial-gradient(circle at 50% 70%, #fff6c8, #ffc23a 55%, #ff7a00); box-shadow: 0 0 18px 6px rgb(255 170 50 / .55); opacity: 0; transform: scale(.2); transform-origin: 50% 100%; transition: opacity .4s, transform .4s; }
+.candle.lit .c-flame { opacity: 1; transform: scale(1); animation: flicker 1.6s ease-in-out var(--f, 0s) infinite; }
+.candle .c-wick { position: absolute; bottom: 58px; width: 2px; height: 6px; background: #3a3350; }
+.candle .c-wax { width: 24px; height: 58px; border-radius: 5px 5px 8px 8px; background: linear-gradient(90deg, #cfc6e8, #f2eefc 45%, #b9afd8); opacity: .55; transition: opacity .5s; }
+.candle.lit .c-wax { opacity: 1; }
+.candle:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; border-radius: 12px; }
+@keyframes flicker { 0%, 100% { transform: scale(1) rotate(-2deg); } 25% { transform: scale(1.06, .94) rotate(2deg); } 55% { transform: scale(.95, 1.05) rotate(-1deg); } 80% { transform: scale(1.03) rotate(1.5deg); } }
+@media (prefers-reduced-motion: reduce) { .candle.lit .c-flame { animation: none; } .candle .c-flame, .candle .c-wax, .candle-room { transition: none; } }
+@media (max-width: 380px) { .days-tabs { gap: var(--space-1); padding-inline: var(--space-3); } .days-tabs [role=tab] { font-size: .75rem; letter-spacing: -.01em; } }

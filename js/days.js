@@ -107,6 +107,68 @@ export function createDays(getInfo) {
   field.addEventListener('click', (e) => { const b = e.target.closest('.balloon'); if (b) pop(b); });
   $('#balloonReset').addEventListener('click', () => { popped = new Set(); buildBalloons(true); });
 
+  // ---- Candles tab ----
+  const cField = $('#candleField');
+  const cNote = $('#candleNote');
+  let lit = new Set();
+  let candlesFor = '';
+  function buildCandles(force) {
+    const { days, anchorTs } = getInfo();
+    const key = `${days}|${anchorTs}`;
+    if (!force && key === candlesFor) return;
+    if (key !== candlesFor) lit = new Set();
+    candlesFor = key;
+    cField.replaceChildren();
+    for (let i = 0; i < count(days); i++) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'candle' + (lit.has(i) ? ' lit' : '');
+      b.dataset.i = i;
+      b.style.setProperty('--f', `${(-(i * 0.37) % 3).toFixed(2)}s`);
+      b.setAttribute('aria-pressed', lit.has(i));
+      b.setAttribute('aria-label', `Light the candle for ${labelFor(i, days, anchorTs).title}`);
+      b.innerHTML = '<i class="c-flame"></i><i class="c-wick"></i><i class="c-wax"></i>';
+      cField.append(b);
+    }
+    updateCandles();
+  }
+  function updateCandles(msg) {
+    const { days } = getInfo();
+    const n = count(days);
+    $('#candleStatus').textContent = lit.size === n ? `All ${days || 1} ${days === 1 ? 'day' : 'days'} lit` : `${lit.size} of ${n} lit`;
+    $('#candleRoom').classList.toggle('glow', lit.size === n);
+    $('#candleReset').hidden = lit.size === 0;
+    $('#candleAll').hidden = lit.size === n;
+    if (msg !== undefined) cNote.textContent = msg;
+    else if (lit.size === 0) cNote.textContent = 'Light a candle for each day you kept for yourself.';
+  }
+  function lightOne(el, silent) {
+    const i = Number(el.dataset.i);
+    if (lit.has(i)) return;
+    lit.add(i); el.classList.add('lit'); el.setAttribute('aria-pressed', 'true');
+    if (silent) return;
+    navigator.vibrate?.(10);
+    const { days, anchorTs } = getInfo();
+    const l = labelFor(i, days, anchorTs);
+    const done = lit.size === count(days);
+    updateCandles(done ? `The whole room is glowing. ${days || 1} ${days === 1 ? 'day' : 'days'}, every one of them yours.` : `${l.title}${days ? ` · ${l.sub}` : ''} · ${NOTES[i % NOTES.length]}`);
+  }
+  cField.addEventListener('click', (e) => {
+    const b = e.target.closest('.candle');
+    if (!b) return;
+    if (lit.has(Number(b.dataset.i))) {
+      const { days, anchorTs } = getInfo();
+      const l = labelFor(Number(b.dataset.i), days, anchorTs);
+      cNote.textContent = `${l.title}${days ? ` · ${l.sub}` : ''} · ${NOTES[Number(b.dataset.i) % NOTES.length]}`;
+    } else lightOne(b);
+  });
+  $('#candleAll').addEventListener('click', () => {
+    cField.querySelectorAll('.candle:not(.lit)').forEach((c) => lightOne(c, true));
+    const { days } = getInfo();
+    updateCandles(`The whole room is glowing. ${days || 1} ${days === 1 ? 'day' : 'days'}, every one of them yours.`);
+  });
+  $('#candleReset').addEventListener('click', () => { lit = new Set(); buildCandles(true); });
+
   // ---- Seconds tab ----
   function buildGrid() {
     if (grid.children.length) return;
@@ -147,7 +209,9 @@ export function createDays(getInfo) {
       t.tabIndex = on ? 0 : -1;
     }
     $('#panelBalloons').hidden = tab !== 'balloons';
+    $('#panelCandles').hidden = tab !== 'candles';
     $('#panelSeconds').hidden = tab !== 'seconds';
+    if (tab === 'candles') buildCandles(false);
     clearInterval(timer);
     if (tab === 'seconds') { buildGrid(); tickSeconds(); timer = setInterval(tickSeconds, 250); }
   }
