@@ -1,8 +1,10 @@
-# Clear Days: No Contact Tracker (PWA starter kit)
+# No Contact Dude: No Contact Tracker (PWA)
 
 A Progressive Web App built with plain HTML, CSS and JavaScript. You can install it to the home screen on mobile and desktop, and it works fully offline. All check-ins and streaks are saved on the device with **IndexedDB**, so there's no backend, no account and no build step.
 
 ## Features
+- **App-style sections:** a bottom menu splits the app into **Home** (the calm orb and today's status), **Check-in** (today's form and recent entries, with a red dot until you've checked in), **Progress** (stats, heatmap and milestones) and **Help** (urgent help, quick tools, urges survived). Sections have their own addresses (`#home`, `#checkin`, `#progress`, `#help`), so the browser's Back button works. The install shortcuts open "Check in today" and "I need help now" (`?action=checkin`, `?action=urgent`).
+- **Loading screen and logo:** the dude (our sprout in sunglasses) drops his shades on, the name rises word by word, and a soft teal sky with ripples and drifting lights plays behind a loading bar. It shows for about 1.7 seconds on launch and is skipped on reloads in the same session. The app icon is the dude with a small "no phone" badge.
 - **Calm centrepiece:** days sit inside a slowly breathing orb with a progress ring towards your goal, water-like ripples, drifting lights, and a glowing bead that circles once a minute like a seconds hand. Underneath are live hours, minutes and seconds, a running count of "seconds of peace", and "Every second COUNTS!". Motion stops if you've asked your device for reduced motion.
 - **Exact time:** set the date *and time* you last spoke (onboarding or Settings). The counter runs from that exact moment, and a "had contact" check-in can carry its own time so a slip restarts the count from the real moment.
 - **Duolingo-style design:** chunky 3D buttons, option cards, emoji moods, a friendly sprout mascot, medals for milestones, and light and dark themes. The scroll bar is hidden on phones.
@@ -25,7 +27,7 @@ js/db.js               Promise wrapper around IndexedDB (check-ins, settings, ba
 js/streaks.js          Pure date, streak and urge-stats logic (no DOM, easy to unit-test)
 js/app.js              UI rendering, events, SW registration, install prompt
 js/rescue.js           The guided urgent-help flow (seven steps, wave timer, breathing)
-icons/                 SVG and PNG icons (192, 512, maskable, Apple touch, favicon)
+icons/                 The dude icon as SVG and PNG (192, 512, maskable, Apple touch, favicon)
 ```
 
 ## Run locally
@@ -56,6 +58,7 @@ Each day has one check-in because the date is the key, so saving again replaces 
 - **Shipping changes:** increase `CACHE_VERSION` in `sw.js` whenever you edit a cached file, otherwise users keep the old version.
 - **Milestones:** edit `MILESTONES` in `js/streaks.js`.
 - **Urgent help:** change `PEAK_URGE` (default 8) or `WAIT_MS` (default 20 minutes) at the top of `js/app.js`.
+- **Name and icons:** the display name is in `index.html`, `manifest.webmanifest` (`name`, plus `short_name` for the home-screen label, which phones truncate at around 12 characters) and `offline.html`. The IndexedDB name, backup marker and cache prefix still say `clear-days` on purpose, so existing data, backups and caches keep working.
 - **Colours and fonts:** change the CSS custom properties at the top of `css/styles.css`, and update `theme_color` in the manifest to match. The calm centrepiece's motion lives in the "Calm centrepiece" section of that file.
 - **New fields:** add them to the form in `index.html`, read them in `onCheckinSubmit` in `app.js`, and add an `if (event.oldVersion < 2)` migration in `db.js` if you need new stores or indexes.
 

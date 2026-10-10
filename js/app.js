@@ -26,6 +26,48 @@ const rescue = createRescue({
   keepInNote: (text) => { const f = $('#checkinForm'); f.note.value = f.note.value ? `${f.note.value}\n\n${text}` : text; f.dataset.dirty = '1'; },
 });
 
+/* ---------------- Loading screen ---------------- */
+const SPLASH_MIN_MS = 1700; // long enough to enjoy the animation, counted from when the page started loading
+const splashEl = document.querySelector('#splash');
+let splashSeen = false;
+try { splashSeen = sessionStorage.getItem('nc-splash') === '1'; } catch {}
+if (splashSeen) removeSplash();                // reloads in the same session (e.g. after an update) skip it
+else try { sessionStorage.setItem('nc-splash', '1'); } catch {}
+
+function removeSplash() {
+  splashEl?.setAttribute('hidden', '');
+  document.body.classList.remove('splashing');
+}
+function hideSplash({ immediately = false } = {}) {
+  if (!splashEl || splashEl.hidden) return;
+  const wait = immediately ? 0 : Math.max(0, SPLASH_MIN_MS - performance.now());
+  setTimeout(() => {
+    splashEl.classList.add('out');
+    setTimeout(removeSplash, 600);
+  }, wait);
+}
+
+/* ---------------- Sections (bottom menu) ---------------- */
+const TABS = ['home', 'checkin', 'progress', 'help'];
+let currentTab = 'home';
+const tabFromHash = () => (TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home');
+
+function showTab(name, { scroll = true } = {}) {
+  if (!TABS.includes(name)) name = 'home';
+  currentTab = name;
+  document.querySelectorAll('.page').forEach((pg) => { pg.hidden = pg.dataset.page !== name; });
+  document.querySelectorAll('.tab').forEach((t) => {
+    if (t.dataset.tab === name) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
+  });
+  if (name === 'home') syncOrbit();
+  if (scroll) window.scrollTo({ top: 0 });
+}
+/** Go to a section and keep the address bar (and the Back button) in step. */
+function goTab(name) {
+  showTab(name);
+  if (location.hash !== `#${name}`) location.hash = name;
+}
+
 const pad2 = (n) => String(n).padStart(2, '0');
 const nowTime = () => { const d = new Date(); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
 const startTimeOf = (settings) => settings.startTime || '00:00'; // older data has no time: midnight, as before
@@ -34,12 +76,14 @@ const startTimeOf = (settings) => settings.startTime || '00:00'; // older data h
 init().catch((err) => {
   console.error(err);
   $('#loading').hidden = true;
+  hideSplash({ immediately: true });
   toast(`Couldn't open local storage: ${err.message}`);
 });
 
 async function init() {
   fillMascots();
   bindUI();
+  showTab(tabFromHash(), { scroll: false });
   await db.openDB();
   await load();
   $('#loading').hidden = true;
@@ -50,7 +94,11 @@ async function init() {
   db.requestPersistence().then(updateStorageInfo);
 
   const params = new URLSearchParams(location.search);
-  if (params.get('action') === 'checkin') $('#checkinForm input[name="status"]')?.focus();
+  const action = params.get('action');            // home-screen shortcuts
+  if (action === 'checkin') { goTab('checkin'); $('#checkinForm input[name="status"]')?.focus(); }
+  else if (action === 'help') goTab('help');
+  else if (action === 'urgent') { goTab('help'); rescue.open(); }
+  hideSplash();
 
   // Live clock: tick once a second, aligned to the wall-clock second so it never drifts.
   // Also re-renders when the date changes, and catches up when the app returns to the foreground.
@@ -73,13 +121,15 @@ async function load() {
 }
 
 function fillMascots() {
-  const tpl = $('#mascotTpl');
-  document.querySelectorAll('.mascot-slot').forEach((el) => el.replaceChildren(tpl.content.cloneNode(true)));
+  const mascot = $('#mascotTpl'), logo = $('#logoTpl');
+  document.querySelectorAll('.mascot-slot').forEach((el) => el.replaceChildren(mascot.content.cloneNode(true)));
+  document.querySelectorAll('.logo-slot').forEach((el) => el.replaceChildren(logo.content.cloneNode(true)));
 }
 
 /* ---------------- Render ---------------- */
 function render() {
   const { startDate } = state.settings;
+  document.body.dataset.view = startDate ? 'app' : 'onboarding';
   $('#onboarding').hidden = !!startDate;
   $('#dashboard').hidden = !startDate;
   if (!startDate) {
@@ -138,6 +188,7 @@ function render() {
   $('#statReliefSub').textContent = u.avgRelief == null ? 'finish urgent help to see' : u.avgRelief >= 0 ? 'urge points dropped' : 'urge points higher';
 
   renderCheckin(today);
+  renderToday(today);
   renderCalendar(today);
   renderMilestones(s);
   renderLog();
@@ -158,6 +209,18 @@ function updateClock() {
 /** The bead circles once a minute; line it up with the real seconds (CSS keeps it gliding between syncs). */
 function syncOrbit() {
   $('#orbit').style.animationDelay = `-${((Date.now() % 60000) / 1000).toFixed(2)}s`;
+}
+
+/** Home's "Today" card and the red dot on the Check-in tab. */
+function renderToday(today) {
+  const entry = state.checkins.find((c) => c.date === today);
+  $('#checkinDot').hidden = !!entry;
+  document.querySelector('.today-card').classList.toggle('done', !!entry);
+  $('#todayIco').textContent = entry ? '✓' : '📝';
+  $('#todayText').textContent = !entry
+    ? 'You haven’t checked in yet. It takes about ten seconds.'
+    : entry.status === 'held' ? 'You held No Contact today. Nice work.' : 'You logged contact today. Tomorrow is a fresh start.';
+  $('#todayBtn').textContent = entry ? 'See today’s check-in' : 'Check in now';
 }
 
 function renderCheckin(today) {
@@ -278,6 +341,7 @@ function updateUrgeAlert() {
  * was already saved and has to be reopened for editing.
  */
 function openCheckinWithUrge(level = PEAK_URGE) {
+  goTab('checkin');
   const today = toKey();
   const f = $('#checkinForm');
   if (f.hidden || f.date.value !== today) startEdit(today);
@@ -291,6 +355,7 @@ function openCheckinWithUrge(level = PEAK_URGE) {
 
 /* ---------------- Actions ---------------- */
 function startEdit(date) {
+  goTab('checkin');
   state.editing = date;
   const existing = state.checkins.find((c) => c.date === date);
   fillForm(existing ?? { date, status: 'held', mood: 3, urge: 0, note: '' });
@@ -401,7 +466,7 @@ async function exportBackup() {
   const data = await db.exportData();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
-  const a = Object.assign(document.createElement('a'), { href: url, download: `clear-days-backup-${toKey()}.json` });
+  const a = Object.assign(document.createElement('a'), { href: url, download: `no-contact-dude-backup-${toKey()}.json` });
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   toast('Backup downloaded');
@@ -454,8 +519,14 @@ function bindUI() {
   cf.addEventListener('input', () => { cf.dataset.dirty = '1'; });
   cf.addEventListener('change', (e) => { if (e.target.name === 'status') onStatusChange(); });
   $('#urgeInput').addEventListener('input', (e) => { $('#urgeOut').textContent = e.target.value; updateUrgeAlert(); });
-  $('#urgentBtn').addEventListener('click', rescue.open);
-  $('#urgeAlertBtn').addEventListener('click', rescue.open);
+  $('#urgentBtn').addEventListener('click', () => rescue.open());
+  $('#urgeAlertBtn').addEventListener('click', () => rescue.open());
+  document.querySelectorAll('.tool').forEach((b) => b.addEventListener('click', () => rescue.open(Number(b.dataset.step))));
+  window.addEventListener('hashchange', () => { if (tabFromHash() !== currentTab) showTab(tabFromHash()); });
+  $('#tabbar').addEventListener('click', (e) => {
+    const tab = e.target.closest('.tab');
+    if (tab && tab.dataset.tab === currentTab) { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  });
   $('#urgentClose').addEventListener('click', rescue.close);
   $('#editTodayBtn').addEventListener('click', () => startEdit(toKey()));
   $('#cancelEditBtn').addEventListener('click', () => { state.editing = null; delete cf.dataset.dirty; render(); });
@@ -528,7 +599,7 @@ function setupInstall() {
     deferredPrompt = null;
     btn.hidden = true;
   });
-  window.addEventListener('appinstalled', () => { btn.hidden = true; toast('Installed — find Clear Days on your home screen.'); });
+  window.addEventListener('appinstalled', () => { btn.hidden = true; toast('Installed — find No Contact Dude on your home screen.'); });
 }
 
 function setupNetwork() {

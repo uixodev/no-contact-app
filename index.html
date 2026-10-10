@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Clear Days — No Contact Tracker</title>
-  <meta name="description" content="A private, offline-first No Contact tracker. Check-ins and streaks stay on your device.">
+  <title>No Contact Dude — No Contact Tracker</title>
+  <meta name="description" content="No Contact Dude: a private, offline-first No Contact tracker. Check-ins, streaks and urgent help stay on your device.">
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest">
@@ -17,7 +17,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Clear Days">
+  <meta name="apple-mobile-web-app-title" content="NC Dude">
 
   <!-- Font (cached by the service worker for offline use; rounded system fonts otherwise) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,7 +30,45 @@
     (function () { try { var t = localStorage.getItem('cd-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {} })();
   </script>
 </head>
-<body>
+<body class="splashing">
+  <!-- Loading screen: shown on launch while the app opens (app.js fades it out) -->
+  <div id="splash" class="splash" role="status" aria-label="Loading No Contact Dude">
+    <div class="splash-bg" aria-hidden="true">
+      <i class="blob blob-1"></i><i class="blob blob-2"></i>
+      <i class="mote"></i><i class="mote"></i><i class="mote"></i><i class="mote"></i><i class="mote"></i><i class="mote"></i><i class="mote"></i>
+    </div>
+    <div class="splash-center">
+      <div class="splash-stage" aria-hidden="true">
+        <div class="splash-ripples"><i></i><i></i><i></i></div>
+        <span class="logo-slot splash-logo"></span>
+      </div>
+      <h1 class="splash-title" aria-hidden="true"><span class="w" style="--i:0">No</span> <span class="w" style="--i:1">Contact</span> <span class="w dude" style="--i:2">Dude</span></h1>
+      <p class="splash-tag">Every second counts.</p>
+    </div>
+    <div class="splash-load" aria-hidden="true"><div class="splash-bar"><i></i></div><p>Getting things ready…</p></div>
+  </div>
+
+  <!-- The dude: our sprout mascot in sunglasses. Cloned into every .logo-slot by app.js -->
+  <template id="logoTpl">
+    <svg class="logo-dude" viewBox="0 0 140 140" aria-hidden="true">
+      <ellipse cx="70" cy="131" rx="40" ry="6" fill="currentColor" opacity=".18"/>
+      <g class="d-body">
+        <path d="M70 40C58 14 36 16 32 25c4 15 24 19 38 15Z" fill="#89E219"/>
+        <path d="M70 40C82 10 106 12 110 22c-4 16-24 22-40 18Z" fill="#58CC02"/>
+        <path d="M70 34C38 34 20 62 20 88c0 24 22 38 50 38s50-14 50-38c0-26-18-54-50-54Z" fill="#58CC02"/>
+        <path d="M70 98c-24 0-36 10-30 17 10 10 50 10 60 0 6-7-6-17-30-17Z" fill="#89E219"/>
+        <g class="d-eyes"><ellipse cx="50" cy="80" rx="11" ry="13" fill="#fff"/><ellipse cx="90" cy="80" rx="11" ry="13" fill="#fff"/><circle cx="52" cy="82" r="5.5" fill="#3C3C3C"/><circle cx="88" cy="82" r="5.5" fill="#3C3C3C"/></g>
+        <g class="d-shades">
+          <path d="M33 74 21 69M107 74 119 69" stroke="#1B2A31" stroke-width="4.5" stroke-linecap="round"/>
+          <rect x="31" y="68" width="35" height="25" rx="9" fill="#1B2A31"/><rect x="74" y="68" width="35" height="25" rx="9" fill="#1B2A31"/>
+          <rect x="64" y="73" width="12" height="5" rx="2.5" fill="#1B2A31"/>
+          <path d="M40 71h7l-9 20h-5.5z M83 71h7l-9 20h-5.5z" fill="#fff" opacity=".26"/>
+        </g>
+        <ellipse cx="33" cy="99" rx="7" ry="4.5" fill="#FF9BAA" opacity=".6"/><ellipse cx="107" cy="99" rx="7" ry="4.5" fill="#FF9BAA" opacity=".6"/>
+        <path d="M57 101q13 11 26 0" fill="none" stroke="#1B2A31" stroke-width="4.5" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </template>
   <a class="skip-link" href="#main">Skip to dashboard</a>
 
   <!-- Friendly sprout mascot, cloned into every .mascot-slot by app.js -->
@@ -55,8 +93,8 @@
 
   <header class="topbar">
     <div class="brand">
-      <span class="brand-mark mascot-slot" aria-hidden="true"></span>
-      <span class="brand-name">Clear Days</span>
+      <span class="brand-mark logo-slot" aria-hidden="true"></span>
+      <span class="brand-name"><span>No Contact</span> <b>Dude</b></span>
     </div>
     <div class="topbar-actions">
       <span class="net-pill" id="netPill" role="status" aria-live="polite"><span class="dot"></span><span class="net-label">Online</span></span>
@@ -85,7 +123,7 @@
       <div class="mascot-slot mascot-lg"></div>
       <p class="eyebrow">Welcome</p>
       <h1 id="obTitle" class="display">Every second you hold the line counts.</h1>
-      <p class="muted">Clear Days keeps a private log of your No Contact journey. Nothing leaves this device — there's no account and no server.</p>
+      <p class="muted">No Contact Dude keeps a private log of your No Contact journey. Nothing leaves this device — there's no account and no server.</p>
       <form id="onboardForm" class="stack">
         <fieldset class="field-group">
           <legend class="field-label">When did you last speak?</legend>
@@ -117,6 +155,8 @@
     <!-- Dashboard -->
     <div id="dashboard" class="dashboard" hidden>
 
+      <!-- Home: the calm orb and today's status -->
+      <div class="page" id="page-home" data-page="home">
       <!-- Calm centrepiece: a breathing orb, ripples, and a bead that circles once a minute -->
       <section class="sky" aria-labelledby="heroLabel">
         <div class="sky-bg" aria-hidden="true">
@@ -161,6 +201,18 @@
         </div>
       </section>
 
+        <section class="card today-card" aria-labelledby="todayTitle">
+          <div class="today-row">
+            <span class="today-ico" id="todayIco" aria-hidden="true">📝</span>
+            <div class="today-text"><h2 id="todayTitle">Today</h2><p class="muted" id="todayText">You haven’t checked in yet.</p></div>
+          </div>
+          <a class="btn btn-primary btn-block" id="todayBtn" href="#checkin">Check in now</a>
+        </section>
+      </div>
+
+      <!-- Check-in: today's form and your recent entries -->
+      <div class="page" id="page-checkin" data-page="checkin" hidden>
+        <h1 class="page-title">Check-in</h1>
       <section class="card checkin" aria-labelledby="checkinTitle">
         <div class="card-head">
           <h2 id="checkinTitle">Today's check-in</h2>
@@ -240,14 +292,25 @@
         </form>
       </section>
 
-      <section class="stats" aria-label="Statistics">
-        <div class="stat"><span class="stat-ico" aria-hidden="true">🏆</span><span class="stat-value" id="statLongest">0</span><span class="stat-label">Longest run</span><span class="stat-sub">days</span></div>
-        <div class="stat"><span class="stat-ico" aria-hidden="true">🔥</span><span class="stat-value" id="statStreak">0</span><span class="stat-label">Check-in streak</span><span class="stat-sub">days in a row</span></div>
-        <div class="stat"><span class="stat-ico" aria-hidden="true">✅</span><span class="stat-value" id="statTotal">0</span><span class="stat-label">Check-ins</span><span class="stat-sub" id="statTotalSub">logged</span></div>
-        <div class="stat"><span class="stat-ico" id="statMoodIco" aria-hidden="true">🙂</span><span class="stat-value" id="statMood">—</span><span class="stat-label">Mood, last 7</span><span class="stat-sub" id="statUrge">avg urge —</span></div>
-        <div class="stat"><span class="stat-ico" aria-hidden="true">🛡️</span><span class="stat-value" id="statUrgesSurvived">0</span><span class="stat-label">Urges survived</span><span class="stat-sub">with urgent help</span></div>
-        <div class="stat"><span class="stat-ico" aria-hidden="true">🌊</span><span class="stat-value" id="statRelief">—</span><span class="stat-label">Average relief</span><span class="stat-sub" id="statReliefSub">urge points dropped</span></div>
+      <section class="card log-card" aria-labelledby="logTitle">
+        <div class="card-head"><h2 id="logTitle">Recent entries</h2></div>
+        <ul class="log" id="log"></ul>
+        <div class="empty" id="logEmpty" hidden>
+          <p><strong>No check-ins yet.</strong></p>
+          <p class="muted">Your first one takes about ten seconds.</p>
+        </div>
       </section>
+      </div>
+
+      <!-- Progress: stats, heatmap and milestones -->
+      <div class="page" id="page-progress" data-page="progress" hidden>
+        <h1 class="page-title">Progress</h1>
+        <section class="stats" aria-label="Statistics">
+          <div class="stat"><span class="stat-ico" aria-hidden="true">🏆</span><span class="stat-value" id="statLongest">0</span><span class="stat-label">Longest run</span><span class="stat-sub">days</span></div>
+          <div class="stat"><span class="stat-ico" aria-hidden="true">🔥</span><span class="stat-value" id="statStreak">0</span><span class="stat-label">Check-in streak</span><span class="stat-sub">days in a row</span></div>
+          <div class="stat"><span class="stat-ico" aria-hidden="true">✅</span><span class="stat-value" id="statTotal">0</span><span class="stat-label">Check-ins</span><span class="stat-sub" id="statTotalSub">logged</span></div>
+          <div class="stat"><span class="stat-ico" id="statMoodIco" aria-hidden="true">🙂</span><span class="stat-value" id="statMood">—</span><span class="stat-label">Mood, last 7</span><span class="stat-sub" id="statUrge">avg urge —</span></div>
+        </section>
 
       <section class="card calendar-card" aria-labelledby="calTitle">
         <div class="card-head">
@@ -268,28 +331,67 @@
         <h2 id="msTitle">Milestones</h2>
         <ul class="milestones" id="milestones"></ul>
       </section>
+      </div>
 
-      <section class="card log-card" aria-labelledby="logTitle">
-        <div class="card-head"><h2 id="logTitle">Recent entries</h2></div>
-        <ul class="log" id="log"></ul>
-        <div class="empty" id="logEmpty" hidden>
-          <p><strong>No check-ins yet.</strong></p>
-          <p class="muted">Your first one takes about ten seconds.</p>
-        </div>
-      </section>
-
-      <!-- The urgent button lives at the very end, for when you really need it -->
+      <!-- Help: urgent help, quick tools and what you've survived -->
+      <div class="page" id="page-help" data-page="help" hidden>
+        <h1 class="page-title">Help</h1>
       <section class="card sos-card" aria-labelledby="sosTitle">
         <div class="mascot-slot mascot-md"></div>
         <h2 id="sosTitle">Feeling the urge?</h2>
-        <p class="muted">Take a breath first. We'll walk you through it, one step at a time.</p>
+        <p class="muted">Take a breath first. We’ll walk you through it, one step at a time.</p>
         <button class="btn btn-urgent btn-lg btn-block" type="button" id="urgentBtn">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Zm0 6v5m0 3v.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           I want to reach out right now
         </button>
       </section>
+
+        <section class="card tools-card" aria-labelledby="toolsTitle">
+          <h2 id="toolsTitle">Quick tools</h2>
+          <p class="muted small">Jump straight to one thing if you don’t need the whole rescue.</p>
+          <div class="tools">
+            <button type="button" class="tool" data-step="1"><span class="tool-ico" aria-hidden="true">🫁</span><strong>Breathe</strong><small>3 slow rounds</small></button>
+            <button type="button" class="tool" data-step="2"><span class="tool-ico" aria-hidden="true">🖐️</span><strong>Ground yourself</strong><small>5-4-3-2-1</small></button>
+            <button type="button" class="tool" data-step="4"><span class="tool-ico" aria-hidden="true">✍️</span><strong>Let it out</strong><small>Write it, then let go</small></button>
+            <button type="button" class="tool" data-step="5"><span class="tool-ico" aria-hidden="true">⏱️</span><strong>Wave timer</strong><small>5, 10 or 20 minutes</small></button>
+          </div>
+        </section>
+
+        <section class="stats" aria-label="Urges you've ridden out">
+          <div class="stat"><span class="stat-ico" aria-hidden="true">🛡️</span><span class="stat-value" id="statUrgesSurvived">0</span><span class="stat-label">Urges survived</span><span class="stat-sub">with urgent help</span></div>
+          <div class="stat"><span class="stat-ico" aria-hidden="true">🌊</span><span class="stat-value" id="statRelief">—</span><span class="stat-label">Average relief</span><span class="stat-sub" id="statReliefSub">urge points dropped</span></div>
+        </section>
+
+        <section class="card remember-card" aria-labelledby="rememberTitle">
+          <h2 id="rememberTitle">Remember</h2>
+          <ul class="urge-list">
+            <li>Urges peak and pass, usually within 20 minutes.</li>
+            <li>Relief from sending lasts minutes. The setback can last days.</li>
+            <li>You chose this for a good reason. Re-read it when it’s hard.</li>
+            <li>Every second COUNTS!</li>
+          </ul>
+        </section>
+      </div>
     </div>
   </main>
+
+  <!-- App-style bottom menu -->
+  <nav class="tabbar" id="tabbar" aria-label="Sections">
+    <div class="tabbar-inner">
+      <a class="tab" id="tab-home" href="#home" data-tab="home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11.2 12 3.5l8.5 7.7V19a1.5 1.5 0 0 1-1.5 1.5h-4.2v-6H9.2v6H5A1.5 1.5 0 0 1 3.5 19v-7.8Z"/></svg><span>Home</span>
+      </a>
+      <a class="tab" id="tab-checkin" href="#checkin" data-tab="checkin">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m8.2 12.3 2.7 2.7 5-5.4"/></svg><span>Check-in</span><i class="tab-dot" id="checkinDot" hidden aria-label="Not checked in yet"></i>
+      </a>
+      <a class="tab" id="tab-progress" href="#progress" data-tab="progress">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 20v-7M12 20V4.5M18.5 20v-10.5"/></svg><span>Progress</span>
+      </a>
+      <a class="tab tab-sos" id="tab-help" href="#help" data-tab="help">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.4"/><path d="m6 6 3.6 3.6m4.8 4.8L18 18m0-12-3.6 3.6M9.6 14.4 6 18"/></svg><span>Help</span>
+      </a>
+    </div>
+  </nav>
 
   <!-- Urgent help: a guided, step-by-step rescue for the peak of an urge. Steps are rendered by app.js. -->
   <dialog id="urgentDialog" class="urgent" aria-labelledby="urgentTitle">

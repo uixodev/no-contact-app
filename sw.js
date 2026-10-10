@@ -1,4 +1,4 @@
-/* Clear Days service worker
+/* No Contact Dude service worker (cache names keep their old prefix so old caches still get cleaned up)
  * Strategy:
  *  - App shell: precached on install, served cache-first (works fully offline).
  *  - Navigations: network-first with cached index.html fallback.
@@ -6,7 +6,7 @@
  *  - Everything else same-origin: cache-first, then network (and cache it).
  * Bump CACHE_VERSION whenever you change any precached file.
  */
-const CACHE_VERSION = 'v2.1.0';
+const CACHE_VERSION = 'v3.0.0';
 const SHELL_CACHE = `clear-days-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `clear-days-runtime-${CACHE_VERSION}`;
 
