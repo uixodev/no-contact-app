@@ -476,7 +476,7 @@
     <div class="days-tabs" role="tablist" aria-label="Ways to see your time">
       <button type="button" role="tab" id="tabBalloons" data-tab="balloons" aria-selected="true" aria-controls="panelBalloons"><span class="t-ico" aria-hidden="true">🎈</span><span>Balloons</span></button>
       <button type="button" role="tab" id="tabCandles" data-tab="candles" aria-selected="false" aria-controls="panelCandles" tabindex="-1"><span class="t-ico" aria-hidden="true">🕯️</span><span>Candles</span></button>
-      <button type="button" role="tab" id="tabPeace" data-tab="peace" aria-selected="false" aria-controls="panelPeace" tabindex="-1"><span class="t-ico" aria-hidden="true">🌊</span><span>Peace</span></button>
+      <button type="button" role="tab" id="tabPeace" data-tab="peace" aria-selected="false" aria-controls="panelPeace" tabindex="-1"><span class="t-ico" aria-hidden="true">🎨</span><span>Peace</span></button>
       <button type="button" role="tab" id="tabSeconds" data-tab="seconds" aria-selected="false" aria-controls="panelSeconds" tabindex="-1"><span class="t-ico" aria-hidden="true">⏱️</span><span>Seconds</span></button>
     </div>
     <section id="panelBalloons" role="tabpanel" aria-labelledby="tabBalloons" class="days-panel">
@@ -491,13 +491,13 @@
     </section>
     <section id="panelPeace" role="tabpanel" aria-labelledby="tabPeace" class="days-panel" hidden>
       <div class="peace-scene" id="peaceScene">
-        <svg class="sea" viewBox="0 0 400 200" preserveAspectRatio="none" aria-hidden="true">
-          <path class="wave w1" d="M0 80 C 50 60 100 100 150 80 S 250 60 300 80 S 380 100 400 80 V200 H0Z"/>
-          <path class="wave w2" d="M0 110 C 60 90 110 130 170 110 S 270 90 330 110 S 390 125 400 110 V200 H0Z"/>
-          <path class="wave w3" d="M0 140 C 70 125 120 155 190 140 S 290 125 350 140 S 395 150 400 140 V200 H0Z"/>
-        </svg>
-        <i class="moon" aria-hidden="true"></i>
         <div class="peace-big"><b id="pzSecs">0</b><span>seconds of peace</span></div>
+        <div class="mosaic-host" id="mosaicHost"></div>
+        <p class="mosaic-legend" id="mosaicLegend" aria-live="off">Loading your picture…</p>
+        <div class="mosaic-bar">
+          <button type="button" class="btn btn-ghost btn-sm" id="mosaicNew">🎲 New picture</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="mosaicShape" aria-pressed="false">■ Squares</button>
+        </div>
       </div>
       <p class="peace-lead">That is the same as…</p>
       <ul class="peace-list" id="peaceList">

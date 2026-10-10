@@ -929,8 +929,9 @@ function registerServiceWorker() {
   }).catch((err) => console.warn('[sw] registration failed', err));
 
   let refreshing = false;
+  const hadController = !!navigator.serviceWorker.controller; // on a first visit the new worker just takes over: no reload, so nobody loses what they're typing
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (refreshing) return;
+    if (refreshing || !hadController) return;
     refreshing = true;
     location.reload();
   });

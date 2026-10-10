@@ -1,5 +1,6 @@
 /** days.js — "Your days": tap the orb to pop a balloon for every day, or watch the seconds of the current minute fill in. */
 import { confetti } from './fx.js';
+import { createMosaic } from './mosaic.js';
 
 const COLORS = ['#58CC02', '#1CB0F6', '#FFC800', '#FF9600', '#CE82FF', '#FF86D0', '#2B70C9'];
 const NOTES = [
@@ -202,6 +203,13 @@ export function createDays(getInfo) {
   }
 
   // ---- Peace tab: what your seconds look like ----
+  const mosaic = createMosaic({ host: $('#mosaicHost'), getInfo, onText: (t) => { $('#mosaicLegend').textContent = t; } });
+  $('#mosaicNew').addEventListener('click', () => mosaic.next());
+  $('#mosaicShape').addEventListener('click', (e) => {
+    const sq = mosaic.toggleShape() === 'square';
+    e.currentTarget.setAttribute('aria-pressed', sq);
+    e.currentTarget.textContent = sq ? '● Circles' : '■ Squares';
+  });
   const PEACE_NOTES = [
     'Every one of them is a moment you didn’t have to carry.',
     'Slow down. Nothing is asking you to act right now.',
@@ -235,7 +243,8 @@ export function createDays(getInfo) {
     $('#panelSeconds').hidden = tab !== 'seconds';
     if (tab === 'candles') buildCandles(false);
     clearInterval(timer);
-    if (tab === 'peace') { tickPeace(); timer = setInterval(tickPeace, 1000); }
+    if (tab !== 'peace') mosaic.stop();
+    if (tab === 'peace') { mosaic.start().catch(() => { $('#mosaicLegend').textContent = 'The picture could not load. Check your connection once and it will work offline afterwards.'; }); tickPeace(); timer = setInterval(tickPeace, 1000); }
     if (tab === 'seconds') { buildGrid(); tickSeconds(); timer = setInterval(tickSeconds, 250); }
   }
   dlg.querySelectorAll('[role=tab]').forEach((t) => t.addEventListener('click', () => show(t.dataset.tab)));
@@ -254,7 +263,7 @@ export function createDays(getInfo) {
     show('balloons');
     if (!dlg.open) dlg.showModal();
   }
-  dlg.addEventListener('close', () => { clearInterval(timer); opener?.focus?.(); });
+  dlg.addEventListener('close', () => { clearInterval(timer); mosaic.stop(); opener?.focus?.(); });
   $('#daysClose').addEventListener('click', () => dlg.close());
   dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
 
