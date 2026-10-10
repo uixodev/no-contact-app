@@ -49,7 +49,19 @@ export function createGames() {
   let opener = null;
   let current = 'menu';
 
+  /** "Best" lines on the menu cards, shown only once there is something to show. */
+  function refreshBests() {
+    const memBest = [0, 1, 2, 3].map((l) => getBest(`memory${l}`, 0)).find(Boolean);
+    const lines = {
+      memory: memBest ? `Best: ${memBest} moves (level 1)` : '', merge: getBest('merge') ? `Best: ${getBest('merge').toLocaleString('en-GB')}` : '',
+      bubbles: getBest('bubbles', 1) > 1 ? `Reached wave ${getBest('bubbles', 1)}` : '', sort: getBest('sortLevel', 1) > 1 ? `Reached level ${getBest('sortLevel', 1)}` : '',
+      echo: getBest('echo') ? `Best: ${getBest('echo')} in a row` : '',
+    };
+    dlg.querySelectorAll('[data-best]').forEach((el) => { el.textContent = lines[el.dataset.best] || ''; el.hidden = !lines[el.dataset.best]; });
+  }
+
   function show(name) {
+    if (name === 'menu') refreshBests();
     current = name;
     for (const [k, el] of Object.entries(views)) el.hidden = k !== name;
     $('#gameBack').hidden = name === 'menu';
@@ -76,7 +88,7 @@ export function createGames() {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'mem-card'; b.dataset.face = f; b.dataset.i = i;
       b.setAttribute('aria-label', `Card ${i + 1}, face down`);
-      b.innerHTML = `<span class="mem-inner"><span class="mem-back" aria-hidden="true">✨</span><span class="mem-front" aria-hidden="true">${f}</span></span>`;
+      b.innerHTML = `<span class="mem-inner"><span class="mem-back" aria-hidden="true"></span><span class="mem-front" aria-hidden="true"><b class="mem-emoji">${f}</b></span></span>`;
       return b;
     }));
     $('#memLevel').textContent = `Level ${level + 1}`;
