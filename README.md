@@ -3,7 +3,8 @@
 A Progressive Web App built with plain HTML, CSS and JavaScript. You can install it to the home screen on mobile and desktop, and it works fully offline. All check-ins and streaks are saved on the device with **IndexedDB**, so there's no backend, no account and no build step.
 
 ## Features
-- **App-style sections:** a bottom menu splits the app into **Home** (the calm orb and today's status), **Check-in** (today's form and recent entries, with a red dot until you've checked in), **Progress** (stats, heatmap and milestones) and **Help** (urgent help, quick tools, urges survived). Sections have their own addresses (`#home`, `#checkin`, `#progress`, `#help`), so the browser's Back button works. The install shortcuts open "Check in today" and "I need help now" (`?action=checkin`, `?action=urgent`).
+- **App-style sections:** a bottom menu splits the app into **Home** (the calm orb and today's status), **Check-in** (see the next item, with a red dot on its tab until you've checked in), **Progress** (stats, heatmap and milestones) and **Help** (urgent help, quick tools, urges survived). Sections have their own addresses (`#home`, `#checkin`, `#progress`, `#help`), so the browser's Back button works. The install shortcuts open "Check in today" and "I need help now" (`?action=checkin`, `?action=urgent`).
+- **Check-in:** a 7-day strip (tap a day to open it) with your streak, a daily goal (check in, log 3 wins, write one good thing) that celebrates when you finish it, and today's form with a one-tap "Quick save: I held today". The form has optional sections: what triggered you, wins (10 small self-care wins), sleep and energy, and a reflection (one good thing, "Tomorrow I will…", a note with writing prompts). "Your patterns" shows your hardest day, best mood day, top trigger, average sleep and wins, plus separate mood and urge charts (hover, tap or use the keyboard for values; a table view is one tap away). Recent entries can be filtered (All, Held, Contact, With notes) and paged, and a "Daily reminder" button downloads a repeating calendar event (`.ics`) at the time you choose.
 - **Loading screen and logo:** the dude (our sprout in sunglasses) drops his shades on, the name rises word by word, and a soft teal sky with ripples and drifting lights plays behind a loading bar. It shows for about 1.7 seconds on launch and is skipped on reloads in the same session. The app icon is the dude with a small "no phone" badge.
 - **Calm centrepiece:** days sit inside a slowly breathing orb with a progress ring towards your goal, water-like ripples, drifting lights, and a glowing bead that circles once a minute like a seconds hand. Underneath are live hours, minutes and seconds, a running count of "seconds of peace", and "Every second COUNTS!". Motion stops if you've asked your device for reduced motion.
 - **Exact time:** set the date *and time* you last spoke (onboarding or Settings). The counter runs from that exact moment, and a "had contact" check-in can carry its own time so a slip restarts the count from the real moment.
@@ -27,6 +28,9 @@ js/db.js               Promise wrapper around IndexedDB (check-ins, settings, ba
 js/streaks.js          Pure date, streak and urge-stats logic (no DOM, easy to unit-test)
 js/app.js              UI rendering, events, SW registration, install prompt
 js/rescue.js           The guided urgent-help flow (seven steps, wave timer, breathing)
+js/tags.js             Shared lists: triggers, wins, sleep, energy, writing prompts
+js/charts.js           A tiny SVG line-chart builder (used by Your patterns)
+js/fx.js               Confetti, shared by urgent help and the daily goal
 icons/                 The dude icon as SVG and PNG (192, 512, maskable, Apple touch, favicon)
 ```
 
@@ -42,8 +46,8 @@ To test offline in Chrome, open DevTools, go to Application > Service Workers an
 ## Data model (IndexedDB `clear-days`, version 2)
 | Store | Key | Record |
 |---|---|---|
-| `checkins` | `date` (`YYYY-MM-DD`, local time) | `{ date, status: 'held'\|'contact', mood, urge, note, time?, createdAt, updatedAt }` (`time` only on contact entries) |
-| `settings` | `key` | `{ key, value }` holding `startDate`, `startTime` (`HH:MM`), `goal`, `reason`, `friendName`, `friendPhone` |
+| `checkins` | `date` (`YYYY-MM-DD`, local time) | `{ date, status: 'held'\|'contact', mood, urge, note, time?, triggers[], wins[], sleep, energy, good, tomorrow, createdAt, updatedAt }` (`time` only on contact entries; the other new fields are optional, so older entries still work) |
+| `settings` | `key` | `{ key, value }` holding `startDate`, `startTime` (`HH:MM`), `goal`, `reason`, `friendName`, `friendPhone`, `reminderTime` |
 | `urges` | `at` (ISO time) | `{ at, before, after, tags[], activity, waitedMin }`, one per urge finished in urgent help (added in version 2; existing data is kept on upgrade) |
 
 Each day has one check-in because the date is the key, so saving again replaces that day's entry.
