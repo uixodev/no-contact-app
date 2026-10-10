@@ -6,7 +6,7 @@
  *  - Everything else same-origin: cache-first, then network (and cache it).
  * Bump CACHE_VERSION whenever you change any precached file.
  */
-const CACHE_VERSION = 'v1.1.1';
+const CACHE_VERSION = 'v2.0.0';
 const SHELL_CACHE = `clear-days-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `clear-days-runtime-${CACHE_VERSION}`;
 

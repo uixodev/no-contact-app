@@ -8,8 +8,8 @@
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#2F4A3E" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#141A17" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#131F24" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
   <!-- iOS home-screen support -->
@@ -19,10 +19,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Clear Days">
 
-  <!-- Fonts (cached by the service worker for offline use; system fallbacks otherwise) -->
+  <!-- Font (cached by the service worker for offline use; rounded system fonts otherwise) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="css/styles.css">
   <script>
@@ -33,26 +33,43 @@
 <body>
   <a class="skip-link" href="#main">Skip to dashboard</a>
 
+  <!-- Friendly sprout mascot, cloned into every .mascot-slot by app.js -->
+  <template id="mascotTpl">
+    <svg class="mascot" viewBox="0 0 140 140" aria-hidden="true">
+      <ellipse class="m-shadow" cx="70" cy="130" rx="38" ry="6"/>
+      <g class="m-body">
+        <path class="m-leaf m-leaf-l" d="M70 40C58 14 36 16 32 25c4 15 24 19 38 15Z"/>
+        <path class="m-leaf m-leaf-r" d="M70 40C82 10 106 12 110 22c-4 16-24 22-40 18Z"/>
+        <path class="m-skin" d="M70 34C38 34 20 62 20 88c0 24 22 38 50 38s50-14 50-38c0-26-18-54-50-54Z"/>
+        <path class="m-belly" d="M70 98c-24 0-36 10-30 17 10 10 50 10 60 0 6-7-6-17-30-17Z"/>
+        <g class="m-eyes">
+          <ellipse cx="50" cy="80" rx="11" ry="13" fill="#fff"/><ellipse cx="90" cy="80" rx="11" ry="13" fill="#fff"/>
+          <circle cx="52" cy="82" r="5.5" fill="#3C3C3C"/><circle cx="88" cy="82" r="5.5" fill="#3C3C3C"/>
+          <circle cx="54" cy="79.5" r="1.9" fill="#fff"/><circle cx="90" cy="79.5" r="1.9" fill="#fff"/>
+        </g>
+        <ellipse cx="34" cy="98" rx="7" ry="4.5" fill="#FF9BAA" opacity=".6"/><ellipse cx="106" cy="98" rx="7" ry="4.5" fill="#FF9BAA" opacity=".6"/>
+        <path d="M60 98q10 9 20 0" fill="none" stroke="#3C3C3C" stroke-width="4" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </template>
+
   <header class="topbar">
     <div class="brand">
-      <svg class="brand-mark" viewBox="0 0 512 512" width="32" height="32" aria-hidden="true">
-        <rect width="512" height="512" rx="112" fill="currentColor"/>
-        <path d="M136 312a120 120 0 0 1 240 0" fill="none" stroke="var(--color-bg)" stroke-width="40" stroke-linecap="round"/>
-        <path d="M104 372h304" stroke="var(--color-accent)" stroke-width="40" stroke-linecap="round"/>
-      </svg>
+      <span class="brand-mark mascot-slot" aria-hidden="true"></span>
       <span class="brand-name">Clear Days</span>
     </div>
     <div class="topbar-actions">
       <span class="net-pill" id="netPill" role="status" aria-live="polite"><span class="dot"></span><span class="net-label">Online</span></span>
       <button class="btn btn-ghost btn-sm" id="installBtn" hidden>
-        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Install
       </button>
+      <span class="streak-chip" id="streakChip" title="Check-in streak" aria-label="Check-in streak"><span aria-hidden="true">🔥</span><b id="streakChipNum">0</b></span>
       <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>
       </button>
       <button class="icon-btn" id="settingsBtn" aria-label="Settings">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
       </button>
     </div>
   </header>
@@ -65,14 +82,19 @@
 
     <!-- Onboarding -->
     <section id="onboarding" class="onboarding card" hidden aria-labelledby="obTitle">
+      <div class="mascot-slot mascot-lg"></div>
       <p class="eyebrow">Welcome</p>
-      <h1 id="obTitle" class="display">Every day you hold the line counts.</h1>
+      <h1 id="obTitle" class="display">Every second you hold the line counts.</h1>
       <p class="muted">Clear Days keeps a private log of your No Contact journey. Nothing leaves this device — there's no account and no server.</p>
       <form id="onboardForm" class="stack">
-        <label class="field">
-          <span class="field-label">When did No Contact begin?</span>
-          <input type="date" name="startDate" required>
-        </label>
+        <fieldset class="field-group">
+          <legend class="field-label">When did you last speak?</legend>
+          <div class="row-2">
+            <label class="field"><span class="field-sub">Date</span><input type="date" name="startDate" required></label>
+            <label class="field"><span class="field-sub">Time</span><input type="time" name="startTime" required></label>
+          </div>
+          <span class="field-hint">The exact moment No Contact began. Your live counter starts from here.</span>
+        </fieldset>
         <label class="field">
           <span class="field-label">Your goal</span>
           <select name="goal">
@@ -88,51 +110,66 @@
           <textarea name="reason" rows="2" maxlength="200" placeholder="e.g. I deserve peace and room to heal."></textarea>
           <span class="field-hint">Shown on your dashboard as a reminder on harder days.</span>
         </label>
-        <button class="btn btn-primary btn-lg" type="submit">Start tracking</button>
+        <button class="btn btn-primary btn-lg btn-block" type="submit">Start tracking</button>
       </form>
     </section>
 
     <!-- Dashboard -->
     <div id="dashboard" class="dashboard" hidden>
-      <section class="card hero" aria-labelledby="heroLabel">
-        <div class="hero-main">
-          <p class="eyebrow" id="heroLabel">Days of No Contact</p>
-          <p class="hero-number"><span id="daysCount">0</span><span class="hero-unit" id="daysUnit">days</span></p>
-          <div class="live-clock" id="liveClock" role="timer" aria-live="off" aria-label="Time since your last contact, updating every second">
-            <span class="clock-unit"><b id="clkH">00</b><small>hours</small></span>
-            <span class="clock-unit"><b id="clkM">00</b><small>min</small></span>
-            <span class="clock-unit"><b id="clkS">00</b><small>sec</small></span>
-          </div>
-          <p class="tagline">Every second <strong>COUNTS!</strong></p>
-          <p class="muted" id="sinceLabel"></p>
-          <blockquote class="reason" id="reasonQuote" hidden></blockquote>
-          <button class="btn btn-urgent urgent-trigger" type="button" id="urgentBtn">
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Zm0 6v5m0 3v.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            I want to reach out right now
-          </button>
+
+      <!-- Calm centrepiece: a breathing orb, ripples, and a bead that circles once a minute -->
+      <section class="sky" aria-labelledby="heroLabel">
+        <div class="sky-bg" aria-hidden="true">
+          <i class="blob blob-1"></i><i class="blob blob-2"></i>
+          <i class="mote"></i><i class="mote"></i><i class="mote"></i><i class="mote"></i><i class="mote"></i><i class="mote"></i><i class="mote"></i>
         </div>
-        <div class="hero-ring" aria-hidden="true">
-          <svg viewBox="0 0 120 120">
-            <circle class="ring-track" cx="60" cy="60" r="52"/>
-            <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="52"/>
+
+        <p class="eyebrow sky-eyebrow" id="heroLabel">Days of No Contact</p>
+
+        <div class="orb-stage">
+          <div class="ripples" aria-hidden="true"><i></i><i></i><i></i></div>
+          <svg class="orb-ring" viewBox="0 0 260 260" aria-hidden="true">
+            <circle class="ring-track" cx="130" cy="130" r="112"/>
+            <circle class="ring-fill" id="ringFill" cx="130" cy="130" r="112"/>
           </svg>
-          <div class="ring-label"><strong id="goalPct">0%</strong><span id="goalLabel">of 90 days</span></div>
+          <div class="orbit" id="orbit" aria-hidden="true"><i class="bead"></i></div>
+          <div class="orb">
+            <span class="orb-days" id="daysCount">0</span>
+            <span class="orb-unit" id="daysUnit">days</span>
+          </div>
         </div>
-        <div class="milestone-bar">
-          <div class="milestone-head"><span>Next milestone</span><strong id="nextMilestone">—</strong></div>
-          <div class="bar" role="progressbar" aria-label="Progress to next milestone" aria-valuemin="0" aria-valuemax="100" id="milestoneBar"><span id="milestoneFill"></span></div>
+
+        <div class="live-clock" id="liveClock" role="timer" aria-live="off" aria-label="Time since your last contact, updating every second">
+          <span class="clock-unit"><b id="clkH">00</b><small>hours</small></span>
+          <span class="clock-sep" aria-hidden="true">:</span>
+          <span class="clock-unit"><b id="clkM">00</b><small>min</small></span>
+          <span class="clock-sep" aria-hidden="true">:</span>
+          <span class="clock-unit"><b id="clkS">00</b><small>sec</small></span>
+        </div>
+
+        <p class="peace"><b id="totalSecs">0</b> seconds of peace</p>
+        <p class="tagline">Every second <strong>COUNTS!</strong></p>
+        <p class="since" id="sinceLabel"></p>
+        <blockquote class="reason" id="reasonQuote" hidden></blockquote>
+
+        <div class="sky-foot">
+          <div class="goal-chip"><strong id="goalPct">0%</strong> <span id="goalLabel">of 90 days</span></div>
+          <div class="milestone-bar">
+            <div class="milestone-head"><span>Next milestone</span><strong id="nextMilestone">—</strong></div>
+            <div class="bar" role="progressbar" aria-label="Progress to next milestone" aria-valuemin="0" aria-valuemax="100" id="milestoneBar"><span id="milestoneFill"></span></div>
+          </div>
         </div>
       </section>
 
       <section class="card checkin" aria-labelledby="checkinTitle">
         <div class="card-head">
           <h2 id="checkinTitle">Today's check-in</h2>
-          <span class="badge" id="checkinBadge" hidden>Done</span>
+          <span class="badge" id="checkinBadge" hidden>Done ✓</span>
         </div>
 
         <div id="checkinDone" class="checkin-done" hidden>
-          <p id="checkinSummary"></p>
-          <button class="btn btn-ghost" id="editTodayBtn">Edit today's entry</button>
+          <div class="done-banner"><span class="done-check" aria-hidden="true">✓</span><p id="checkinSummary"></p></div>
+          <button class="btn btn-ghost btn-block" id="editTodayBtn">Edit today's entry</button>
           <div class="urge-tips">
             <h3>When the urge hits</h3>
             <ul>
@@ -149,22 +186,30 @@
             <legend class="field-label">How did today go?</legend>
             <label class="choice choice-held">
               <input type="radio" name="status" value="held" checked>
-              <span><strong>I held No Contact</strong><small>No calls, texts, or checking their profiles</small></span>
+              <span class="choice-card"><span class="choice-icon" aria-hidden="true">✓</span><span class="choice-text"><strong>I held No Contact</strong><small>No calls, texts, or checking their profiles</small></span></span>
             </label>
             <label class="choice choice-contact">
               <input type="radio" name="status" value="contact">
-              <span><strong>I had contact</strong><small>Restarts the count — and that's okay</small></span>
+              <span class="choice-card"><span class="choice-icon" aria-hidden="true">✕</span><span class="choice-text"><strong>I had contact</strong><small>Restarts the count — and that's okay</small></span></span>
             </label>
           </fieldset>
+
+          <div class="contact-time" id="contactTimeRow" hidden>
+            <label class="field">
+              <span class="field-label">What time was the contact?</span>
+              <input type="time" name="time">
+            </label>
+            <span class="field-hint">Your counter restarts from this exact moment.</span>
+          </div>
 
           <fieldset class="mood">
             <legend class="field-label">Mood</legend>
             <div class="mood-row">
-              <label><input type="radio" name="mood" value="1"><span title="Very low">1</span></label>
-              <label><input type="radio" name="mood" value="2"><span title="Low">2</span></label>
-              <label><input type="radio" name="mood" value="3" checked><span title="Okay">3</span></label>
-              <label><input type="radio" name="mood" value="4"><span title="Good">4</span></label>
-              <label><input type="radio" name="mood" value="5"><span title="Great">5</span></label>
+              <label><input type="radio" name="mood" value="1" aria-label="Very low"><span title="Very low">😞</span></label>
+              <label><input type="radio" name="mood" value="2" aria-label="Low"><span title="Low">😕</span></label>
+              <label><input type="radio" name="mood" value="3" aria-label="Okay" checked><span title="Okay">😐</span></label>
+              <label><input type="radio" name="mood" value="4" aria-label="Good"><span title="Good">🙂</span></label>
+              <label><input type="radio" name="mood" value="5" aria-label="Great"><span title="Great">😄</span></label>
             </div>
             <div class="mood-scale"><span>Very low</span><span>Great</span></div>
           </fieldset>
@@ -178,12 +223,10 @@
             <button class="btn btn-urgent btn-sm" type="button" id="urgeAlertBtn">Open urgent help</button>
           </div>
 
-          <div class="row-2">
-            <label class="field">
-              <span class="field-label">Date</span>
-              <input type="date" name="date" required>
-            </label>
-          </div>
+          <label class="field">
+            <span class="field-label">Date</span>
+            <input type="date" name="date" required>
+          </label>
 
           <label class="field">
             <span class="field-label">Note <span class="optional">optional</span></span>
@@ -191,17 +234,17 @@
           </label>
 
           <div class="form-actions">
-            <button class="btn btn-primary" type="submit">Save check-in</button>
-            <button class="btn btn-ghost" type="button" id="cancelEditBtn" hidden>Cancel</button>
+            <button class="btn btn-primary btn-lg" type="submit">Save check-in</button>
+            <button class="btn btn-ghost btn-lg" type="button" id="cancelEditBtn" hidden>Cancel</button>
           </div>
         </form>
       </section>
 
       <section class="stats" aria-label="Statistics">
-        <div class="card stat"><span class="stat-label">Longest run</span><span class="stat-value" id="statLongest">0</span><span class="stat-sub">days</span></div>
-        <div class="card stat"><span class="stat-label">Check-in streak</span><span class="stat-value" id="statStreak">0</span><span class="stat-sub">days in a row</span></div>
-        <div class="card stat"><span class="stat-label">Check-ins</span><span class="stat-value" id="statTotal">0</span><span class="stat-sub" id="statTotalSub">logged</span></div>
-        <div class="card stat"><span class="stat-label">Mood, last 7</span><span class="stat-value" id="statMood">—</span><span class="stat-sub" id="statUrge">avg urge —</span></div>
+        <div class="stat"><span class="stat-ico" aria-hidden="true">🏆</span><span class="stat-value" id="statLongest">0</span><span class="stat-label">Longest run</span><span class="stat-sub">days</span></div>
+        <div class="stat"><span class="stat-ico" aria-hidden="true">🔥</span><span class="stat-value" id="statStreak">0</span><span class="stat-label">Check-in streak</span><span class="stat-sub">days in a row</span></div>
+        <div class="stat"><span class="stat-ico" aria-hidden="true">✅</span><span class="stat-value" id="statTotal">0</span><span class="stat-label">Check-ins</span><span class="stat-sub" id="statTotalSub">logged</span></div>
+        <div class="stat"><span class="stat-ico" id="statMoodIco" aria-hidden="true">🙂</span><span class="stat-value" id="statMood">—</span><span class="stat-label">Mood, last 7</span><span class="stat-sub" id="statUrge">avg urge —</span></div>
       </section>
 
       <section class="card calendar-card" aria-labelledby="calTitle">
@@ -232,6 +275,17 @@
           <p class="muted">Your first one takes about ten seconds.</p>
         </div>
       </section>
+
+      <!-- The urgent button lives at the very end, for when you really need it -->
+      <section class="card sos-card" aria-labelledby="sosTitle">
+        <div class="mascot-slot mascot-md"></div>
+        <h2 id="sosTitle">Feeling the urge?</h2>
+        <p class="muted">Take a breath first. We'll walk you through it, one step at a time.</p>
+        <button class="btn btn-urgent btn-lg btn-block" type="button" id="urgentBtn">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Zm0 6v5m0 3v.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          I want to reach out right now
+        </button>
+      </section>
     </div>
   </main>
 
@@ -250,20 +304,20 @@
       <blockquote class="reason" id="urgentReason" hidden></blockquote>
 
       <section class="urgent-step" aria-labelledby="breathTitle">
-        <h3 id="breathTitle">1 · Breathe</h3>
+        <h3 id="breathTitle"><span class="step-num">1</span> Breathe</h3>
         <div class="breath" aria-hidden="true"><div class="breath-orb"></div></div>
         <p class="breath-label" id="breathLabel">Breathe in…</p>
       </section>
 
       <section class="urgent-step" aria-labelledby="waitTitle">
-        <h3 id="waitTitle">2 · Wait 20 minutes</h3>
+        <h3 id="waitTitle"><span class="step-num">2</span> Wait 20 minutes</h3>
         <p class="muted small" id="waitNote">Urges peak and pass. Don’t decide anything until the timer ends.</p>
         <p class="wait-time" id="waitTime">20:00</p>
         <button class="btn btn-ghost" type="button" id="waitBtn">Start 20-minute wait</button>
       </section>
 
       <section class="urgent-step" aria-labelledby="insteadTitle">
-        <h3 id="insteadTitle">3 · Do something else</h3>
+        <h3 id="insteadTitle"><span class="step-num">3</span> Do something else</h3>
         <ul class="urge-list">
           <li>Put your phone in another room, or mute and archive their chat.</li>
           <li>Write what you’d say in your check-in note instead of sending it.</li>
@@ -282,11 +336,18 @@
   <!-- Settings dialog -->
   <dialog id="settingsDialog" aria-labelledby="settingsTitle">
     <form method="dialog" id="settingsForm" class="stack">
-      <div class="card-head"><h2 id="settingsTitle">Settings</h2><button class="icon-btn" value="cancel" aria-label="Close">✕</button></div>
-      <label class="field"><span class="field-label">No Contact start date</span><input type="date" name="startDate" required></label>
+      <div class="card-head"><h2 id="settingsTitle">Settings</h2><button class="icon-btn" value="cancel" aria-label="Close" formnovalidate>✕</button></div>
+      <fieldset class="field-group">
+        <legend class="field-label">When did you last speak?</legend>
+        <div class="row-2">
+          <label class="field"><span class="field-sub">Date</span><input type="date" name="startDate" required></label>
+          <label class="field"><span class="field-sub">Time</span><input type="time" name="startTime" required></label>
+        </div>
+        <span class="field-hint">The exact moment No Contact began. Your live counter runs from here.</span>
+      </fieldset>
       <label class="field"><span class="field-label">Goal (days)</span><input type="number" name="goal" min="1" max="3650" required></label>
       <label class="field"><span class="field-label">Your reason</span><textarea name="reason" rows="2" maxlength="200"></textarea></label>
-      <button class="btn btn-primary" value="save">Save settings</button>
+      <button class="btn btn-primary btn-block" value="save">Save settings</button>
 
       <hr>
       <h3>Your data</h3>
