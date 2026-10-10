@@ -222,11 +222,6 @@ export function createDays(getInfo) {
     const { anchorTs } = getInfo();
     const s = Math.max(0, Math.floor((Date.now() - anchorTs) / 1000));
     $('#pzSecs').textContent = fmt(s);
-    $('#pzBeats').textContent = fmt(s);          // about one calm heartbeat a second
-    $('#pzBreaths').textContent = fmt(s / 5);    // a slow breath is about five seconds
-    $('#pzSongs').textContent = fmt(s / 210);    // a song is about 3½ minutes
-    $('#pzNights').textContent = fmt(s / (8 * 3600));
-    $('#pzDays').textContent = fmt(s / 86400);
     if (s % 20 === 0 && s !== peaceNoteAt) { peaceNoteAt = s; $('#peaceNote').textContent = PEACE_NOTES[(s / 20) % PEACE_NOTES.length]; }
   }
 

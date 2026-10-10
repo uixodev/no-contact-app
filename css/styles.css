@@ -877,19 +877,15 @@ dialog.edit .edit-inner, dialog.entry, dialog.days .days-inner { overscroll-beha
 .peace-big { display: grid; justify-items: center; text-align: center; color: #fff; }
 .peace-big b { font-size: clamp(1.7rem, 9vw, 2.4rem); font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.1; overflow-wrap: anywhere; }
 .peace-big span { font-weight: 800; letter-spacing: .04em; }
-.peace-lead { margin: 0; font-weight: 800; color: var(--color-muted); text-align: center; }
-.peace-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
-.peace-list li { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); background: var(--tile); border: 2px solid var(--tile-edge); border-bottom-width: 4px; min-width: 0; }
-.pz-ico { flex: none; width: 32px; height: 32px; display: grid; place-items: center; font-size: 1.4rem; }
-.pz-text { min-width: 0; overflow-wrap: anywhere; font-weight: 700; color: var(--color-muted); }
-.pz-text b { color: var(--color-strong); font-weight: 900; font-variant-numeric: tabular-nums; font-size: 1.05rem; }
-.pz-heart { animation: heartbeat 1s ease-in-out infinite; }
-@keyframes heartbeat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.18); } 30% { transform: scale(1); } 45% { transform: scale(1.1); } }
-.pz-breath::before { content: ''; width: 16px; height: 16px; border-radius: 50%; background: var(--green); animation: breathe-dot 5s ease-in-out infinite; }
-@keyframes breathe-dot { 0%, 100% { transform: scale(.7); opacity: .6; } 50% { transform: scale(1.5); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .pz-heart, .pz-breath::before { animation: none; } }
 .mosaic-host { width: 100%; aspect-ratio: 1; min-width: 0; line-height: 0; }
 .mosaic-host canvas { display: block; width: 100% !important; height: auto !important; aspect-ratio: 1; touch-action: manipulation; cursor: pointer; }
 .mosaic-legend { margin: 0; min-height: 2.6em; text-align: center; color: #cfd8ff; font-weight: 700; font-size: var(--text-sm); overflow-wrap: anywhere; }
 .mosaic-bar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
 @keyframes sway { 50% { transform: rotate(4deg); } }
+/* the Peace panel breathes: drifting night colours and a softly glowing counter */
+.peace-scene { background: linear-gradient(135deg, #141a3a, #2a1f5c, #123a5a, #141a3a); background-size: 300% 300%; animation: peaceDrift 24s ease-in-out infinite; }
+@keyframes peaceDrift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+.peace-big b { animation: peaceGlow 6s ease-in-out infinite; }
+@keyframes peaceGlow { 0%, 100% { text-shadow: 0 0 10px rgb(180 200 255 / .25); } 50% { text-shadow: 0 0 26px rgb(190 215 255 / .75), 0 0 8px rgb(255 255 255 / .35); } }
+.peace-big span { opacity: .85; }
+@media (prefers-reduced-motion: reduce) { .peace-scene, .peace-big b { animation: none; } }
