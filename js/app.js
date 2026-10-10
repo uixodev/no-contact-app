@@ -19,7 +19,7 @@ const LOG_FILTERS = [['all', 'All'], ['held', 'Held'], ['contact', 'Contact'], [
 const PEAK_URGE = 8;                 // urge level (0–10) treated as a "peak"
 
 // anchorTs = the exact moment the current No Contact run began (ms); days = whole days elapsed since then.
-const state = { settings: {}, checkins: [], urges: [], editing: null, days: 0, anchorTs: null, logFilter: 'all', logLimit: LOG_PAGE };
+const state = { settings: {}, checkins: [], urges: [], editing: null, days: 0, anchorTs: null, logFilter: 'all', logLimit: LOG_PAGE, returnToEntry: null };
 
 // The guided "urgent help" flow lives in rescue.js; it gets what it needs from here.
 const rescue = createRescue({
@@ -331,15 +331,16 @@ function renderInsights() {
 function renderCheckin(today) {
   const todayEntry = state.checkins.find((c) => c.date === today);
   const editing = state.editing;
-  const showForm = !todayEntry || editing;
   $('#checkinBadge').hidden = !todayEntry;
-  $('#checkinDone').hidden = showForm;
-  $('#checkinForm').hidden = !showForm;
+  $('#checkinDone').hidden = !todayEntry;
+  $('#checkinForm').hidden = editing ? false : !!todayEntry; // while editing, the form is in the pop-up
+  $('#inlineEditingNote').hidden = !(editing && !todayEntry);
   $('#cancelEditBtn').hidden = !editing;
-  $('#checkinTitle').textContent = editing && editing !== today
-    ? `Editing ${fmtShort.format(fromKey(editing))}` : "Today's check-in";
+  $('#dateField').hidden = !!editing;                         // the date names the entry, so it can't change here
+  $('#saveBtn').textContent = editing ? 'Save changes' : 'Save check-in';
+  $('#checkinTitle').textContent = "Today's check-in";
 
-  if (todayEntry && !editing) {
+  if (todayEntry) {
     const word = todayEntry.status === 'held'
       ? 'You held No Contact today.'
       : `You logged contact today${todayEntry.time ? ` at ${todayEntry.time}` : ''}. Tomorrow is a fresh start.`;
@@ -587,13 +588,44 @@ function openCheckinWithUrge(level = PEAK_URGE) {
 }
 
 /* ---------------- Actions ---------------- */
+/** Edit (or add) the entry for a day in a pop-up window, using the same check-in form. */
 function startEdit(date) {
-  goTab('checkin');
   state.editing = date;
   const existing = state.checkins.find((c) => c.date === date);
   fillForm(existing ?? { date, status: 'held', mood: 3, urge: 0, note: '' });
   render();
-  $('#checkinForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const dlg = $('#editDialog');
+  $('#editBody').append($('#checkinForm'));                   // the very same form moves into the pop-up
+  $('#checkinForm').hidden = false;
+  $('#editTitle').textContent = date === toKey() && existing ? 'Edit today’s entry' : `${existing ? 'Edit' : 'Add'} ${fmtDay.format(fromKey(date))}`;
+  if (!dlg.open) dlg.showModal();
+  $('#editBody').scrollTop = 0;
+  requestAnimationFrame(autosizeAll);                         // boxes are measurable once the pop-up is showing
+}
+
+/** Put the form back in the page. Safe to call more than once. */
+function restoreForm() {
+  const f = $('#checkinForm');
+  if (f.parentElement !== $('#formSlot')) $('#formSlot').append(f);
+}
+
+/** Close the pop-up, asking first if there are unsaved changes. */
+function requestCloseEdit() {
+  const f = $('#checkinForm');
+  if (f.dataset.dirty && !confirm('Discard your changes?')) return;
+  $('#editDialog').close();
+}
+
+/** Runs whenever the pop-up closes (Save, Cancel, ✕ or Escape): tidy up and, if we came from the reading view, go back to it. */
+function onEditClosed() {
+  const f = $('#checkinForm');
+  restoreForm();
+  state.editing = null;
+  delete f.dataset.dirty;
+  render();
+  const back = state.returnToEntry;
+  state.returnToEntry = null;
+  if (back && state.checkins.some((c) => c.date === back)) openEntry(back);
 }
 
 async function removeEntry(date) {
@@ -634,9 +666,12 @@ async function onCheckinSubmit(e) {
   const before = computeStats(state.checkins, state.settings.startDate, toKey(), { startTime: startTimeOf(state.settings) });
   const goalBefore = dailyGoal(state.checkins.find((c) => c.date === entry.date));
   await db.saveCheckin(entry);
-  state.editing = null;
   delete f.dataset.dirty;
-  await load(); render();
+  await load();
+  restoreForm();
+  state.editing = null;
+  if ($('#editDialog').open) $('#editDialog').close(); // onEditClosed() re-renders (and returns to the reading view if we came from it)
+  render();
   const after = computeStats(state.checkins, state.settings.startDate, toKey(), { startTime: startTimeOf(state.settings) });
 
   const goalAfter = dailyGoal(entry);
@@ -799,7 +834,7 @@ function bindUI() {
   $('#entryClose').addEventListener('click', () => $('#entryDialog').close());
   $('#entryNewer').addEventListener('click', () => stepEntry(-1));
   $('#entryOlder').addEventListener('click', () => stepEntry(1));
-  $('#entryEdit').addEventListener('click', () => { const { date } = entryList[entryIdx]; $('#entryDialog').close(); startEdit(date); });
+  $('#entryEdit').addEventListener('click', () => { const { date } = entryList[entryIdx]; state.returnToEntry = date; $('#entryDialog').close(); startEdit(date); }); // come back to the reading view afterwards
   $('#entryDelete').addEventListener('click', async () => { const { date } = entryList[entryIdx]; if (await removeEntry(date)) $('#entryDialog').close(); });
   $('#entryDialog').addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') { e.preventDefault(); stepEntry(-1); }
@@ -820,7 +855,10 @@ function bindUI() {
   });
   $('#urgentClose').addEventListener('click', rescue.close);
   $('#editTodayBtn').addEventListener('click', () => startEdit(toKey()));
-  $('#cancelEditBtn').addEventListener('click', () => { state.editing = null; delete cf.dataset.dirty; render(); });
+  $('#cancelEditBtn').addEventListener('click', requestCloseEdit);
+  $('#editClose').addEventListener('click', requestCloseEdit);
+  $('#editDialog').addEventListener('cancel', (e) => { if (cf.dataset.dirty && !confirm('Discard your changes?')) e.preventDefault(); }); // Escape key
+  $('#editDialog').addEventListener('close', onEditClosed);
   $('#settingsBtn').addEventListener('click', openSettings);
   $('#settingsForm').addEventListener('submit', onSettingsSubmit);
   $('#settingsForm').addEventListener('input', (e) => { if (e.target.name === 'startDate' || e.target.name === 'startTime') e.currentTarget.startTime.setCustomValidity(''); });

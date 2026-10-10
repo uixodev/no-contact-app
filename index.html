@@ -252,6 +252,8 @@
             </div>
           </div>
 
+          <p class="muted inline-editing" id="inlineEditingNote" hidden>You’re editing an entry in the pop-up window.</p>
+          <div id="formSlot">
           <form id="checkinForm" class="stack">
             <button class="btn btn-ghost btn-block quick-held" type="button" id="quickHeldBtn">⚡ Quick save: I held today</button>
 
@@ -328,16 +330,17 @@
               </div>
             </details>
 
-            <label class="field">
+            <label class="field" id="dateField">
               <span class="field-label">Date</span>
               <input type="date" name="date" required>
             </label>
 
             <div class="form-actions">
-              <button class="btn btn-primary btn-lg" type="submit">Save check-in</button>
+              <button class="btn btn-primary btn-lg" type="submit" id="saveBtn">Save check-in</button>
               <button class="btn btn-ghost btn-lg" type="button" id="cancelEditBtn" hidden>Cancel</button>
             </div>
           </form>
+          </div>
         </section>
 
         <section class="card insights-card" aria-labelledby="insTitle">
@@ -476,6 +479,17 @@
         <button class="btn btn-ghost" type="button" id="rescueBack">Back</button>
         <button class="btn btn-primary" type="button" id="rescueNext">Continue</button>
       </footer>
+    </div>
+  </dialog>
+
+  <!-- Edit an entry in a pop-up. The check-in form is moved in here while you edit, then back. -->
+  <dialog id="editDialog" class="edit" aria-labelledby="editTitle">
+    <div class="edit-inner">
+      <header class="edit-top">
+        <h2 id="editTitle" tabindex="-1">Edit entry</h2>
+        <button class="icon-btn" type="button" id="editClose" aria-label="Close without saving">✕</button>
+      </header>
+      <div class="edit-body" id="editBody"></div>
     </div>
   </dialog>
 

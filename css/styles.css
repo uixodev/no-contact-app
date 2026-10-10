@@ -114,8 +114,8 @@ button, a, label, [role='button'] { touch-action: manipulation; }
 
 /* Hide the scroll bar on phones and tablets (the page still scrolls; desktop keeps its bar) */
 @media (max-width: 760px), (pointer: coarse) {
-  html, body, dialog, .calendar-wrap, .rescue-body, .entry-body, textarea { scrollbar-width: none; -ms-overflow-style: none; }
-  html::-webkit-scrollbar, body::-webkit-scrollbar, dialog::-webkit-scrollbar, .calendar-wrap::-webkit-scrollbar, .rescue-body::-webkit-scrollbar, .entry-body::-webkit-scrollbar, textarea::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  html, body, dialog, .calendar-wrap, .rescue-body, .entry-body, .edit-body, textarea { scrollbar-width: none; -ms-overflow-style: none; }
+  html::-webkit-scrollbar, body::-webkit-scrollbar, dialog::-webkit-scrollbar, .calendar-wrap::-webkit-scrollbar, .rescue-body::-webkit-scrollbar, .entry-body::-webkit-scrollbar, .edit-body::-webkit-scrollbar, textarea::-webkit-scrollbar { display: none; width: 0; height: 0; }
 }
 
 .muted { color: var(--color-muted); font-weight: 600; }
@@ -776,3 +776,21 @@ dialog.entry[open] { display: flex; }
 /* rows use the full width now: Edit and Delete live in the reading view */
 .log li { grid-template-columns: minmax(0, 1fr); }
 .log-dot { width: 30px; height: 30px; font-size: .8rem; }
+
+/* ================= Edit an entry in a pop-up ================= */
+.inline-editing { padding: var(--space-4); border-radius: var(--radius-md); background: var(--color-surface-2); font-weight: 800; }
+dialog.edit { padding: 0; width: min(580px, 100%); height: min(820px, 100dvh); max-height: 100dvh; overflow: hidden; }
+dialog.edit[open] { display: flex; }
+@media (max-width: 600px) { dialog.edit { width: 100%; max-width: 100%; height: 100dvh; border-radius: 0; border-width: 0; } }
+.edit-inner { display: flex; flex-direction: column; width: 100%; min-height: 0; }
+.edit-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: calc(var(--space-3) + env(safe-area-inset-top)) var(--space-4) var(--space-3) var(--space-5); border-bottom: 2px solid var(--color-border); }
+.edit-top h2 { font-size: 1.25rem; font-weight: 900; line-height: 1.2; color: var(--color-strong); outline: 0; min-width: 0; }
+.edit-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: var(--space-5) var(--space-5) 0; }
+.edit-body #checkinForm { padding-bottom: 0; }
+/* the Save / Cancel bar stays in reach while the form scrolls */
+.edit-body .form-actions { position: sticky; bottom: 0; margin: 0 calc(-1 * var(--space-5)); padding: var(--space-3) var(--space-5) calc(var(--space-4) + env(safe-area-inset-bottom)); background: var(--color-surface); border-top: 2px solid var(--color-border); z-index: 1; }
+
+.edit-body fieldset, .edit-body .choice, .edit-body .choice-card { min-width: 0; }
+.edit-body #checkinForm, .edit-body .status-choice { grid-template-columns: minmax(0, 1fr); }
+.edit-body .form-actions .btn { min-width: 0; padding-inline: var(--space-4); }
+.edit-body .form-actions .btn-ghost { flex: 0 1 auto; }
