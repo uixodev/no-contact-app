@@ -890,8 +890,8 @@ function bindUI() {
   $('#exportBtn').addEventListener('click', exportBackup);
   $('#importFile').addEventListener('change', importBackup);
   $('#orbBtn').addEventListener('click', () => daysPlay.open());
-  $('#playMemory').addEventListener('click', () => games.open('memory'));
-  $('#playMerge').addEventListener('click', () => games.open('merge'));
+  document.querySelectorAll('[data-game]').forEach((b) => b.addEventListener('click', () => games.open(b.dataset.game)));
+  $('#urgentGame').addEventListener('click', () => games.open('menu'));
   $('#resetBtn').addEventListener('click', resetAll);
   $('#themeBtn').addEventListener('click', toggleTheme);
 }

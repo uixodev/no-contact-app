@@ -1,9 +1,10 @@
-/** games.js — two calm little games to occupy your hands and mind while an urge passes: Memory match and Merge (2048-style). */
+/** games.js — calm little games to occupy your hands and mind while an urge passes: Memory match, Merge, Echo, Sort and Count & pop. */
+import { getBest, setBest, reduced } from './games/store.js';
+import { createEcho } from './games/echo.js';
+import { createSort } from './games/sort.js';
+import { createBubbles } from './games/bubbles.js';
+
 const $ = (s, r = document) => r.querySelector(s);
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-const KEY = 'nc-game-best';
-const loadBest = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
-const saveBest = (b) => { try { localStorage.setItem(KEY, JSON.stringify(b)); } catch { /* private mode: just don't remember */ } };
 
 // ---------- Merge: the pure rules, exported so they can be tested ----------
 /** Slide one row to the left, merging equal neighbours once. Returns the new row and the points scored. */
@@ -42,18 +43,21 @@ const LEVELS = [[3, 4], [4, 4], [4, 5], [5, 6]]; // columns × rows, always an e
 
 export function createGames() {
   const dlg = $('#gameDialog');
-  const views = { menu: $('#gameMenu'), memory: $('#gameMemory'), merge: $('#gameMerge') };
+  const views = { menu: $('#gameMenu'), memory: $('#gameMemory'), merge: $('#gameMerge'), echo: $('#gameEcho'), sort: $('#gameSort'), bubbles: $('#gameBubbles') };
+  const TITLES = { menu: 'Distract me', memory: 'Memory match', merge: 'Merge', echo: 'Echo', sort: 'Sort', bubbles: 'Count & pop' };
+  const extra = { echo: createEcho(views.echo), sort: createSort(views.sort), bubbles: createBubbles(views.bubbles) };
   let opener = null;
-  let best = loadBest();
   let current = 'menu';
 
   function show(name) {
     current = name;
     for (const [k, el] of Object.entries(views)) el.hidden = k !== name;
     $('#gameBack').hidden = name === 'menu';
-    $('#gameTitle').textContent = name === 'memory' ? 'Memory match' : name === 'merge' ? 'Merge' : 'Distract me';
+    $('#gameTitle').textContent = TITLES[name];
+    for (const [k, m] of Object.entries(extra)) if (k !== name) m.stop();
     if (name === 'memory') startMemory(memLevel);
     if (name === 'merge' && !mergeBoard) newMerge();
+    if (extra[name]) extra[name].start();
     $('#gameTitle').focus?.({ preventScroll: true });
   }
 
@@ -81,7 +85,7 @@ export function createGames() {
     updateMemStats();
   }
   function updateMemStats() {
-    const b = best.memory?.[memLevel];
+    const b = getBest(`memory${memLevel}`, 0);
     $('#memMoves').textContent = `${memMoves} ${memMoves === 1 ? 'move' : 'moves'}${b ? ` · best ${b}` : ''}`;
   }
   function flip(card, up) {
@@ -99,8 +103,8 @@ export function createGames() {
     if (a.dataset.face === card.dataset.face) {
       a.classList.add('matched'); card.classList.add('matched'); memLeft--;
       if (memLeft === 0) {
-        const prev = best.memory?.[memLevel];
-        if (!prev || memMoves < prev) { best.memory = { ...(best.memory || {}), [memLevel]: memMoves }; saveBest(best); }
+        const prev = getBest(`memory${memLevel}`, 0);
+        if (!prev || memMoves < prev) setBest(`memory${memLevel}`, memMoves);
         updateMemStats();
         $('#memNote').textContent = memMoves <= LEVELS[memLevel][0] * LEVELS[memLevel][1] / 2 + 3 ? 'Beautiful. That was a clear mind.' : 'Well done. Slow and steady.';
         $('#memNext').hidden = false;
@@ -143,8 +147,8 @@ export function createGames() {
     });
     board.setAttribute('aria-label', `Merge board. ${mergeBoard.map((r) => r.map((v) => v || 'empty').join(', ')).join('. Next row: ')}`);
     $('#mergeScore').textContent = mergeScore.toLocaleString('en-GB');
-    if (mergeScore > (best.merge || 0)) { best.merge = mergeScore; saveBest(best); }
-    $('#mergeBest').textContent = (best.merge || 0).toLocaleString('en-GB');
+    if (mergeScore > getBest('merge')) setBest('merge', mergeScore);
+    $('#mergeBest').textContent = getBest('merge').toLocaleString('en-GB');
     $('#mergeNote').textContent = mergeOver ? 'No more moves. That was a good one. Start again whenever you like.' : 'Swipe to slide the tiles. Equal numbers merge.';
   }
   function doMove(dir) {
@@ -181,10 +185,11 @@ export function createGames() {
   // ----- shell -----
   $('#gamePickMemory').addEventListener('click', () => show('memory'));
   $('#gamePickMerge').addEventListener('click', () => show('merge'));
+  dlg.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => show(b.dataset.pick)));
   $('#gameBack').addEventListener('click', () => show('menu'));
   $('#gameClose').addEventListener('click', () => dlg.close());
   dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
-  dlg.addEventListener('close', () => opener?.focus?.());
+  dlg.addEventListener('close', () => { Object.values(extra).forEach((m) => m.stop()); opener?.focus?.(); });
   function open(game) {
     opener = document.activeElement;
     show(game || 'menu');

@@ -426,8 +426,11 @@
           <h2 id="gameCardTitle">Distract me</h2>
           <p class="muted small">Give your hands and mind something else to do for a few minutes. The urge will pass.</p>
           <div class="tools">
-            <button type="button" class="tool" id="playMemory"><span class="tool-ico" aria-hidden="true">🃏</span><strong>Memory match</strong><small>Find the pairs, no timer</small></button>
-            <button type="button" class="tool" id="playMerge"><span class="tool-ico" aria-hidden="true">🔢</span><strong>Merge</strong><small>Swipe and combine numbers</small></button>
+            <button type="button" class="tool" data-game="bubbles"><span class="tool-ico" aria-hidden="true">🫧</span><strong>Count &amp; pop</strong><small>Drifting bubbles</small></button>
+            <button type="button" class="tool" data-game="sort"><span class="tool-ico" aria-hidden="true">🧪</span><strong>Sort</strong><small>Pour the colours</small></button>
+            <button type="button" class="tool" data-game="echo"><span class="tool-ico" aria-hidden="true">🔔</span><strong>Echo</strong><small>Repeat the pattern</small></button>
+            <button type="button" class="tool" data-game="memory" id="playMemory"><span class="tool-ico" aria-hidden="true">🃏</span><strong>Memory match</strong><small>Find the pairs</small></button>
+            <button type="button" class="tool tool-wide" data-game="merge" id="playMerge"><span class="tool-ico" aria-hidden="true">🔢</span><strong>Merge</strong><small>Swipe and combine numbers</small></button>
           </div>
         </section>
 
@@ -489,6 +492,9 @@
       <p class="muted">Pick one. Both are calm, and neither can be lost for good.</p>
       <button type="button" class="game-pick" id="gamePickMemory"><span aria-hidden="true">🃏</span><strong>Memory match</strong><small>Flip cards and find the pairs. Four levels, no timer.</small></button>
       <button type="button" class="game-pick" id="gamePickMerge"><span aria-hidden="true">🔢</span><strong>Merge</strong><small>Swipe the tiles and combine equal numbers. Chase your best score.</small></button>
+      <button type="button" class="game-pick" data-pick="bubbles"><span aria-hidden="true">🫧</span><strong>Count &amp; pop</strong><small>Slow-drifting bubbles. Pop them in order, 1, 2, 3… Soft focus, soft colours.</small></button>
+      <button type="button" class="game-pick" data-pick="sort"><span aria-hidden="true">🧪</span><strong>Sort</strong><small>Pour the colours until each tube holds one. No timer, undo any time.</small></button>
+      <button type="button" class="game-pick" data-pick="echo"><span aria-hidden="true">🔔</span><strong>Echo</strong><small>Watch glowing orbs sing a pattern, then play it back. It asks for your full attention.</small></button>
     </section>
     <section id="gameMemory" class="game-view" hidden>
       <div class="game-bar"><strong id="memLevel">Level 1</strong><span id="memMoves" aria-live="polite">0 moves</span></div>
@@ -508,6 +514,9 @@
       </div>
       <div class="game-actions"><button type="button" class="btn btn-ghost btn-sm" id="mergeNew">New game</button></div>
     </section>
+    <section id="gameEcho" class="game-view" hidden></section>
+    <section id="gameSort" class="game-view" hidden></section>
+    <section id="gameBubbles" class="game-view" hidden></section>
   </div></dialog>
   <dialog id="daysDialog" class="days" aria-labelledby="daysTitle"><div class="days-inner">
     <header class="days-top"><h2 id="daysTitle" tabindex="-1">Your days</h2>
@@ -553,6 +562,7 @@
         <button class="icon-btn" type="button" id="urgentClose" aria-label="Close urgent help">✕</button>
         <div class="rescue-progress" id="rescueProgress" role="progressbar" aria-label="Urgent help progress" aria-valuemin="1"></div>
         <span class="rescue-count" id="rescueCount" aria-hidden="true">1/7</span>
+        <button class="icon-btn" type="button" id="urgentGame" aria-label="Play a calming game">🎮</button>
       </header>
       <div class="rescue-body" id="rescueBody"></div>
       <footer class="rescue-foot">

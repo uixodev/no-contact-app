@@ -933,3 +933,29 @@ dialog.game[open] { display: flex; }
 .merge-pad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); width: min(100%, 420px); margin-inline: auto; }
 @media (pointer: fine) { .merge-pad { display: none; } }
 @media (prefers-reduced-motion: reduce) { .mem-inner { transition: none; } .tile.new, .tile.merged, .mem-card.matched .mem-front { animation: none; } }
+
+/* ---------- more games: Echo, Sort, Count & pop ---------- */
+.tool-wide { grid-column: 1 / -1; }
+.rescue-top .icon-btn#urgentGame { margin-left: auto; }
+.game-view > .game-bar { flex: none; }
+.echo-board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); width: min(100%, 360px); margin: var(--space-3) auto; }
+.echo-orb { aspect-ratio: 1; border: 0; padding: 0; border-radius: 50%; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--c) 55%, #fff), var(--c) 70%); opacity: .38; box-shadow: inset 0 -8px 16px rgb(0 0 0 / .12); cursor: pointer; transition: opacity .15s, transform .15s, box-shadow .2s; -webkit-tap-highlight-color: transparent; position: relative; touch-action: manipulation; }
+.echo-orb.lit, .echo-orb:active { opacity: 1; transform: scale(1.06); box-shadow: 0 0 36px 10px color-mix(in srgb, var(--c) 60%, transparent), inset 0 -8px 16px rgb(0 0 0 / .1); }
+.echo-orb.lit i { position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--c); animation: echoring .6s ease-out forwards; }
+.echo-orb:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+@keyframes echoring { to { transform: scale(1.5); opacity: 0; } }
+.echo-board.shake { animation: shake .4s; }
+@keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+.sort-board { display: grid; grid-template-columns: repeat(var(--tubes, 4), minmax(0, 1fr)); gap: var(--space-4) var(--space-2); justify-items: center; padding: var(--space-3) 0; }
+.tube { width: min(100%, 54px); height: calc(4 * 38px + 22px); display: flex; flex-direction: column-reverse; justify-content: flex-start; align-items: center; gap: 2px; padding: 8px 4px; border: 3px solid var(--color-border); border-top-color: transparent; border-radius: 0 0 26px 26px; background: color-mix(in srgb, var(--color-surface) 70%, transparent); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .15s, border-color .15s, background .3s; }
+.tube.sel { transform: translateY(-6px); border-color: var(--green); }
+.tube.full { background: var(--green-soft); border-color: var(--green); }
+.tube:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+.ball { width: 100%; max-width: 36px; aspect-ratio: 1; flex: none; border-radius: 50%; background: radial-gradient(circle at 32% 28%, rgb(255 255 255 / .6) 0 14%, transparent 15%), var(--c); box-shadow: inset -3px -4px 0 rgb(0 0 0 / .12); transition: transform .15s; }
+.ball.lift { transform: translateY(-14px); }
+.ball.drop { animation: balldrop .28s ease-out; }
+@keyframes balldrop { from { transform: translateY(-60px); opacity: .4; } }
+.bub-stage { position: relative; flex: 1 1 280px; min-height: 260px; border-radius: var(--radius-md); overflow: hidden; background: linear-gradient(160deg, #1b2a52, #2f4f86 60%, #4d86a8); animation: bubglow 14s ease-in-out infinite alternate; background-size: 160% 160%; }
+@keyframes bubglow { to { background-position: 100% 100%; } }
+.bub-canvas { position: absolute; inset: 0; touch-action: none; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .echo-orb, .tube, .ball, .bub-stage { transition: none; animation: none; } .echo-orb.lit i, .ball.drop, .echo-board.shake { animation: none; } }
