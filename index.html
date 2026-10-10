@@ -98,8 +98,18 @@
         <div class="hero-main">
           <p class="eyebrow" id="heroLabel">Days of No Contact</p>
           <p class="hero-number"><span id="daysCount">0</span><span class="hero-unit" id="daysUnit">days</span></p>
+          <div class="live-clock" id="liveClock" role="timer" aria-live="off" aria-label="Time since your last contact, updating every second">
+            <span class="clock-unit"><b id="clkH">00</b><small>hours</small></span>
+            <span class="clock-unit"><b id="clkM">00</b><small>min</small></span>
+            <span class="clock-unit"><b id="clkS">00</b><small>sec</small></span>
+          </div>
+          <p class="tagline">Every second <strong>COUNTS!</strong></p>
           <p class="muted" id="sinceLabel"></p>
           <blockquote class="reason" id="reasonQuote" hidden></blockquote>
+          <button class="btn btn-urgent urgent-trigger" type="button" id="urgentBtn">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Zm0 6v5m0 3v.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            I want to reach out right now
+          </button>
         </div>
         <div class="hero-ring" aria-hidden="true">
           <svg viewBox="0 0 120 120">
@@ -163,6 +173,10 @@
             <span class="field-label">Urge to reach out <output id="urgeOut">0</output>/10</span>
             <input type="range" name="urge" min="0" max="10" value="0" id="urgeInput">
           </label>
+          <div class="urge-alert" id="urgeAlert" role="status" hidden>
+            <p><strong>That’s a peak.</strong> It will pass — don’t send anything yet.</p>
+            <button class="btn btn-urgent btn-sm" type="button" id="urgeAlertBtn">Open urgent help</button>
+          </div>
 
           <div class="row-2">
             <label class="field">
@@ -220,6 +234,50 @@
       </section>
     </div>
   </main>
+
+  <!-- Urgent help: shown when the urge to reach out is at its peak -->
+  <dialog id="urgentDialog" class="urgent" aria-labelledby="urgentTitle">
+    <div class="stack">
+      <div class="card-head">
+        <div>
+          <p class="eyebrow urgent-eyebrow">Urgent · urge peak</p>
+          <h2 id="urgentTitle" class="display">Pause. This wave will pass.</h2>
+        </div>
+        <button class="icon-btn" type="button" id="urgentClose" aria-label="Close">✕</button>
+      </div>
+
+      <p class="urgent-stake">You’ve held <strong id="urgentTime">0 days 00:00:00</strong>. Every second <strong class="hl">COUNTS!</strong></p>
+      <blockquote class="reason" id="urgentReason" hidden></blockquote>
+
+      <section class="urgent-step" aria-labelledby="breathTitle">
+        <h3 id="breathTitle">1 · Breathe</h3>
+        <div class="breath" aria-hidden="true"><div class="breath-orb"></div></div>
+        <p class="breath-label" id="breathLabel">Breathe in…</p>
+      </section>
+
+      <section class="urgent-step" aria-labelledby="waitTitle">
+        <h3 id="waitTitle">2 · Wait 20 minutes</h3>
+        <p class="muted small" id="waitNote">Urges peak and pass. Don’t decide anything until the timer ends.</p>
+        <p class="wait-time" id="waitTime">20:00</p>
+        <button class="btn btn-ghost" type="button" id="waitBtn">Start 20-minute wait</button>
+      </section>
+
+      <section class="urgent-step" aria-labelledby="insteadTitle">
+        <h3 id="insteadTitle">3 · Do something else</h3>
+        <ul class="urge-list">
+          <li>Put your phone in another room, or mute and archive their chat.</li>
+          <li>Write what you’d say in your check-in note instead of sending it.</li>
+          <li>Message a friend who knows what you’re working on.</li>
+          <li>Walk outside, drink some water, or splash cold water on your face.</li>
+        </ul>
+      </section>
+
+      <div class="urgent-actions">
+        <button class="btn btn-primary" type="button" id="holdingBtn">I’m holding on</button>
+        <button class="btn btn-ghost" type="button" id="logUrgeBtn">Log this urge</button>
+      </div>
+    </div>
+  </dialog>
 
   <!-- Settings dialog -->
   <dialog id="settingsDialog" aria-labelledby="settingsTitle">

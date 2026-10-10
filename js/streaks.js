@@ -27,6 +27,21 @@ export function addDays(key, n) {
 }
 
 /**
+ * Local time of day as zero-padded parts. Together with `noContactDays` (whole calendar
+ * days since the start/contact day, which begins at local midnight) this is the live
+ * hours:minutes:seconds part of the counter. Using calendar days keeps it DST-safe.
+ */
+export function clockParts(now = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  return { h: p(now.getHours()), m: p(now.getMinutes()), s: p(now.getSeconds()) };
+}
+
+/** "12 days 07:45:09" — a single-string version for the urgent screen and screen readers. */
+export function formatElapsed(days, parts) {
+  return `${days} ${days === 1 ? 'day' : 'days'} ${parts.h}:${parts.m}:${parts.s}`;
+}
+
+/**
  * computeStats(checkins, startDate, today)
  *  - noContactDays: full days since the start date or the most recent "contact" check-in.
  *  - longestRun: longest gap between start / contact events (including the current run).

@@ -1,5 +1,5 @@
 import * as db from './db.js';
-import { computeStats, buildCalendar, toKey, fromKey, MILESTONES } from './streaks.js';
+import { computeStats, buildCalendar, clockParts, formatElapsed, toKey, fromKey, MILESTONES } from './streaks.js';
 
 const $ = (sel) => document.querySelector(sel);
 const fmtLong = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -7,7 +7,13 @@ const fmtShort = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'nume
 const MOOD_WORDS = ['', 'Very low', 'Low', 'Okay', 'Good', 'Great'];
 const RING_LEN = 2 * Math.PI * 52;
 
-const state = { settings: {}, checkins: [], editing: null };
+const PEAK_URGE = 8;                 // urge level (0–10) treated as a "peak"
+const WAIT_MS = 20 * 60 * 1000;      // "wait it out" timer
+const BREATH_PHASES = [['Breathe in…', 4], ['Hold…', 4], ['Breathe out slowly…', 6]];
+const BREATH_CYCLE = BREATH_PHASES.reduce((n, [, secs]) => n + secs, 0);
+
+const state = { settings: {}, checkins: [], editing: null, days: 0 };
+const urgent = { openedAt: 0, waitEnd: null, waitState: 'idle' }; // waitState: idle | running | done
 
 /* ---------------- Boot ---------------- */
 init().catch((err) => {
@@ -30,11 +36,17 @@ async function init() {
   const params = new URLSearchParams(location.search);
   if (params.get('action') === 'checkin') $('#checkinForm input[name="status"]')?.focus();
 
-  // Re-render when the day changes or the app is brought back to the foreground.
+  // Live clock: tick once a second, aligned to the wall-clock second so it never drifts.
+  // Also re-renders when the day changes, and catches up when the app returns to the foreground.
   let lastDay = toKey();
-  const tick = () => { if (toKey() !== lastDay) { lastDay = toKey(); render(); } };
+  const tick = () => {
+    if (toKey() !== lastDay) { lastDay = toKey(); render(); }
+    updateClock();
+    updateUrgent();
+  };
+  const loop = () => { tick(); setTimeout(loop, 1000 - (Date.now() % 1000) + 5); };
+  loop();
   document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
-  setInterval(tick, 60_000);
 }
 
 async function load() {
@@ -59,6 +71,8 @@ function render() {
   const s = computeStats(state.checkins, startDate, today);
 
   // Hero
+  state.days = s.noContactDays;
+  updateClock();
   $('#daysCount').textContent = s.noContactDays;
   $('#daysUnit').textContent = s.noContactDays === 1 ? 'day' : 'days';
   const anchor = s.lastContact && s.lastContact >= startDate ? s.lastContact : startDate;
@@ -100,6 +114,15 @@ function render() {
   renderLog();
 }
 
+/** Live hours : minutes : seconds under the day count. */
+function updateClock() {
+  if (!state.settings.startDate) return;
+  const c = clockParts();
+  $('#clkH').textContent = c.h;
+  $('#clkM').textContent = c.m;
+  $('#clkS').textContent = c.s;
+}
+
 function renderCheckin(today) {
   const todayEntry = state.checkins.find((c) => c.date === today);
   const editing = state.editing;
@@ -129,6 +152,86 @@ function fillForm(entry) {
   f.urge.value = entry.urge ?? 0;
   $('#urgeOut').textContent = f.urge.value;
   f.note.value = entry.note ?? '';
+  updateUrgeAlert();
+}
+
+/* ---------------- Urgent help ---------------- */
+function updateUrgeAlert() {
+  $('#urgeAlert').hidden = Number($('#urgeInput').value) < PEAK_URGE;
+}
+
+function openUrgent() {
+  const reason = state.settings.reason?.trim();
+  $('#urgentReason').hidden = !reason;
+  $('#urgentReason').textContent = reason ? `“${reason}”` : '';
+  urgent.openedAt = performance.now();
+  $('#urgentDialog').showModal();
+  updateUrgent(); // after showModal(), so the live time is correct from the first frame
+}
+
+function closeUrgent() { $('#urgentDialog').close(); }
+
+function toggleWait() {
+  if (urgent.waitState === 'running') { urgent.waitState = 'idle'; urgent.waitEnd = null; }
+  else { urgent.waitState = 'running'; urgent.waitEnd = Date.now() + WAIT_MS; }
+  updateUrgent();
+}
+
+const mmss = (ms) => {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+};
+
+/** Runs every second: finishes the wait timer even if the dialog is closed, and refreshes the dialog if open. */
+function updateUrgent() {
+  if (urgent.waitState === 'running' && Date.now() >= urgent.waitEnd) {
+    urgent.waitState = 'done';
+    urgent.waitEnd = null;
+    navigator.vibrate?.([120, 60, 120]);
+    if (!$('#urgentDialog').open) toast('20 minutes passed. You rode it out — how does the urge feel now?');
+  }
+  const dlg = $('#urgentDialog');
+  if (!dlg.open) return;
+
+  $('#urgentTime').textContent = formatElapsed(state.days, clockParts());
+
+  // Breathing label (the orb is animated in CSS on the same cycle, restarted each time the dialog opens)
+  let t = ((performance.now() - urgent.openedAt) / 1000) % BREATH_CYCLE;
+  for (const [label, secs] of BREATH_PHASES) {
+    if (t < secs) { $('#breathLabel').textContent = label; break; }
+    t -= secs;
+  }
+
+  const running = urgent.waitState === 'running';
+  $('#waitTime').textContent = running ? mmss(urgent.waitEnd - Date.now()) : urgent.waitState === 'done' ? '0:00 ✓' : mmss(WAIT_MS);
+  $('#waitBtn').textContent = running ? 'Cancel wait' : urgent.waitState === 'done' ? 'Wait another 20 minutes' : 'Start 20-minute wait';
+  $('#waitNote').textContent = urgent.waitState === 'done'
+    ? 'You made it through 20 minutes. How does the urge feel now?'
+    : 'Urges peak and pass. Don’t decide anything until the timer ends.';
+}
+
+function holdOn() {
+  closeUrgent();
+  toast('You’re doing it. Every second COUNTS!');
+  navigator.vibrate?.(15);
+}
+
+/**
+ * Take the user to today's check-in with the urge raised to (at least) a peak so it gets logged.
+ * If today's form is already open we keep whatever they've typed; we only reset it when today
+ * was already saved and has to be reopened for editing.
+ */
+function logUrge() {
+  closeUrgent();
+  const today = toKey();
+  const f = $('#checkinForm');
+  if (f.hidden || f.date.value !== today) startEdit(today);
+  else f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const urge = Math.max(Number(f.urge.value) || 0, PEAK_URGE);
+  f.urge.value = urge;
+  $('#urgeOut').textContent = urge;
+  f.dataset.dirty = '1';
+  updateUrgeAlert();
 }
 
 function renderCalendar(today) {
@@ -318,7 +421,13 @@ function bindUI() {
   const cf = $('#checkinForm');
   cf.addEventListener('submit', onCheckinSubmit);
   cf.addEventListener('input', () => { cf.dataset.dirty = '1'; });
-  $('#urgeInput').addEventListener('input', (e) => { $('#urgeOut').textContent = e.target.value; });
+  $('#urgeInput').addEventListener('input', (e) => { $('#urgeOut').textContent = e.target.value; updateUrgeAlert(); });
+  $('#urgentBtn').addEventListener('click', openUrgent);
+  $('#urgeAlertBtn').addEventListener('click', openUrgent);
+  $('#urgentClose').addEventListener('click', closeUrgent);
+  $('#waitBtn').addEventListener('click', toggleWait);
+  $('#holdingBtn').addEventListener('click', holdOn);
+  $('#logUrgeBtn').addEventListener('click', logUrge);
   $('#editTodayBtn').addEventListener('click', () => startEdit(toKey()));
   $('#cancelEditBtn').addEventListener('click', () => { state.editing = null; delete cf.dataset.dirty; render(); });
   $('#settingsBtn').addEventListener('click', openSettings);
