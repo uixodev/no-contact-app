@@ -866,3 +866,34 @@ dialog.edit .edit-inner, dialog.entry, dialog.days .days-inner { overscroll-beha
 @keyframes flicker { 0%, 100% { transform: scale(1) rotate(-2deg); } 25% { transform: scale(1.06, .94) rotate(2deg); } 55% { transform: scale(.95, 1.05) rotate(-1deg); } 80% { transform: scale(1.03) rotate(1.5deg); } }
 @media (prefers-reduced-motion: reduce) { .candle.lit .c-flame { animation: none; } .candle .c-flame, .candle .c-wax, .candle-room { transition: none; } }
 @media (max-width: 380px) { .days-tabs { gap: var(--space-1); padding-inline: var(--space-3); } .days-tabs [role=tab] { font-size: .75rem; letter-spacing: -.01em; } }
+
+/* ---------- Your days: peace scene ---------- */
+.days-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.days-tabs [role=tab] { display: grid; justify-items: center; align-content: center; gap: 0; padding: 4px 2px; font-size: .72rem; line-height: 1.15; }
+.days-tabs .t-ico { font-size: 1.15rem; line-height: 1.2; }
+.days-tabs [role=tab] span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 380px) { .days-tabs [role=tab] { font-size: .68rem; letter-spacing: -.02em; } }
+#panelPeace { overflow-y: auto; }
+.peace-scene { position: relative; flex: none; height: 200px; border-radius: var(--radius-md); overflow: hidden; background: linear-gradient(180deg, #1b2a52 0%, #3a5f9a 55%, #7fb5d6 100%); isolation: isolate; }
+.sea { position: absolute; top: 0; left: -6%; width: 112%; height: 100%; z-index: 0; }
+.wave { transform-origin: 50% 100%; animation: sway 9s ease-in-out infinite; }
+.w1 { fill: rgb(255 255 255 / .16); }
+.w2 { fill: rgb(120 200 230 / .35); animation-duration: 12s; animation-direction: reverse; }
+.w3 { fill: rgb(40 110 160 / .55); animation-duration: 15s; }
+@keyframes sway { 0%, 100% { transform: translateX(-3%) scaleY(1); } 50% { transform: translateX(3%) scaleY(1.08); } }
+.moon { position: absolute; top: 16px; right: 24px; width: 34px; height: 34px; border-radius: 50%; background: #fff7d6; box-shadow: 0 0 30px 10px rgb(255 247 214 / .35); animation: moonglow 7s ease-in-out infinite; z-index: 0; }
+@keyframes moonglow { 50% { box-shadow: 0 0 44px 16px rgb(255 247 214 / .5); } }
+.peace-big { position: absolute; inset: 0; z-index: 1; display: grid; place-content: center; justify-items: center; text-align: center; padding: 0 var(--space-3); color: #fff; text-shadow: 0 2px 12px rgb(10 20 50 / .5); }
+.peace-big b { font-size: clamp(1.9rem, 10vw, 2.8rem); font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.1; overflow-wrap: anywhere; }
+.peace-big span { font-weight: 800; letter-spacing: .04em; }
+.peace-lead { margin: 0; font-weight: 800; color: var(--color-muted); text-align: center; }
+.peace-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.peace-list li { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); background: var(--tile); border: 2px solid var(--tile-edge); border-bottom-width: 4px; min-width: 0; }
+.pz-ico { flex: none; width: 32px; height: 32px; display: grid; place-items: center; font-size: 1.4rem; }
+.pz-text { min-width: 0; overflow-wrap: anywhere; font-weight: 700; color: var(--color-muted); }
+.pz-text b { color: var(--color-strong); font-weight: 900; font-variant-numeric: tabular-nums; font-size: 1.05rem; }
+.pz-heart { animation: heartbeat 1s ease-in-out infinite; }
+@keyframes heartbeat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.18); } 30% { transform: scale(1); } 45% { transform: scale(1.1); } }
+.pz-breath::before { content: ''; width: 16px; height: 16px; border-radius: 50%; background: var(--green); animation: breathe-dot 5s ease-in-out infinite; }
+@keyframes breathe-dot { 0%, 100% { transform: scale(.7); opacity: .6; } 50% { transform: scale(1.5); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .wave, .moon, .pz-heart, .pz-breath::before { animation: none; } }

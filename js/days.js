@@ -201,6 +201,27 @@ export function createDays(getInfo) {
     $('#secMinutes').textContent = Math.floor(total / 60).toLocaleString('en-GB');
   }
 
+  // ---- Peace tab: what your seconds look like ----
+  const PEACE_NOTES = [
+    'Every one of them is a moment you didn’t have to carry.',
+    'Slow down. Nothing is asking you to act right now.',
+    'The sea doesn’t hurry, and neither do you.',
+    'Each second you didn’t reach out is a second you gave to yourself.',
+  ];
+  let peaceNoteAt = 0;
+  const fmt = (n) => Math.floor(n).toLocaleString('en-GB');
+  function tickPeace() {
+    const { anchorTs } = getInfo();
+    const s = Math.max(0, Math.floor((Date.now() - anchorTs) / 1000));
+    $('#pzSecs').textContent = fmt(s);
+    $('#pzBeats').textContent = fmt(s);          // about one calm heartbeat a second
+    $('#pzBreaths').textContent = fmt(s / 5);    // a slow breath is about five seconds
+    $('#pzSongs').textContent = fmt(s / 210);    // a song is about 3½ minutes
+    $('#pzNights').textContent = fmt(s / (8 * 3600));
+    $('#pzDays').textContent = fmt(s / 86400);
+    if (s % 20 === 0 && s !== peaceNoteAt) { peaceNoteAt = s; $('#peaceNote').textContent = PEACE_NOTES[(s / 20) % PEACE_NOTES.length]; }
+  }
+
   // ---- tabs & lifecycle ----
   function show(tab) {
     for (const t of dlg.querySelectorAll('[role=tab]')) {
@@ -210,9 +231,11 @@ export function createDays(getInfo) {
     }
     $('#panelBalloons').hidden = tab !== 'balloons';
     $('#panelCandles').hidden = tab !== 'candles';
+    $('#panelPeace').hidden = tab !== 'peace';
     $('#panelSeconds').hidden = tab !== 'seconds';
     if (tab === 'candles') buildCandles(false);
     clearInterval(timer);
+    if (tab === 'peace') { tickPeace(); timer = setInterval(tickPeace, 1000); }
     if (tab === 'seconds') { buildGrid(); tickSeconds(); timer = setInterval(tickSeconds, 250); }
   }
   dlg.querySelectorAll('[role=tab]').forEach((t) => t.addEventListener('click', () => show(t.dataset.tab)));

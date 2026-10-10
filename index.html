@@ -474,9 +474,10 @@
     <header class="days-top"><h2 id="daysTitle" tabindex="-1">Your days</h2>
       <button class="icon-btn" type="button" id="daysClose" aria-label="Close">✕</button></header>
     <div class="days-tabs" role="tablist" aria-label="Ways to see your time">
-      <button type="button" role="tab" id="tabBalloons" data-tab="balloons" aria-selected="true" aria-controls="panelBalloons">🎈 Balloons</button>
-      <button type="button" role="tab" id="tabCandles" data-tab="candles" aria-selected="false" aria-controls="panelCandles" tabindex="-1">🕯️ Candles</button>
-      <button type="button" role="tab" id="tabSeconds" data-tab="seconds" aria-selected="false" aria-controls="panelSeconds" tabindex="-1">⏱️ Seconds</button>
+      <button type="button" role="tab" id="tabBalloons" data-tab="balloons" aria-selected="true" aria-controls="panelBalloons"><span class="t-ico" aria-hidden="true">🎈</span><span>Balloons</span></button>
+      <button type="button" role="tab" id="tabCandles" data-tab="candles" aria-selected="false" aria-controls="panelCandles" tabindex="-1"><span class="t-ico" aria-hidden="true">🕯️</span><span>Candles</span></button>
+      <button type="button" role="tab" id="tabPeace" data-tab="peace" aria-selected="false" aria-controls="panelPeace" tabindex="-1"><span class="t-ico" aria-hidden="true">🌊</span><span>Peace</span></button>
+      <button type="button" role="tab" id="tabSeconds" data-tab="seconds" aria-selected="false" aria-controls="panelSeconds" tabindex="-1"><span class="t-ico" aria-hidden="true">⏱️</span><span>Seconds</span></button>
     </div>
     <section id="panelBalloons" role="tabpanel" aria-labelledby="tabBalloons" class="days-panel">
       <div class="balloon-bar"><strong id="balloonStatus" aria-live="polite"></strong><button type="button" class="btn btn-ghost btn-sm" id="balloonReset" hidden>Bring them back</button></div>
@@ -487,6 +488,26 @@
       <div class="balloon-bar"><strong id="candleStatus" aria-live="polite"></strong><span class="bar-btns"><button type="button" class="btn btn-ghost btn-sm" id="candleAll">Light all</button><button type="button" class="btn btn-ghost btn-sm" id="candleReset" hidden>Blow out</button></span></div>
       <div class="candle-room" id="candleRoom"><div class="candle-field" id="candleField"></div></div>
       <p class="balloon-note" id="candleNote" aria-live="polite"></p>
+    </section>
+    <section id="panelPeace" role="tabpanel" aria-labelledby="tabPeace" class="days-panel" hidden>
+      <div class="peace-scene" id="peaceScene">
+        <svg class="sea" viewBox="0 0 400 200" preserveAspectRatio="none" aria-hidden="true">
+          <path class="wave w1" d="M0 80 C 50 60 100 100 150 80 S 250 60 300 80 S 380 100 400 80 V200 H0Z"/>
+          <path class="wave w2" d="M0 110 C 60 90 110 130 170 110 S 270 90 330 110 S 390 125 400 110 V200 H0Z"/>
+          <path class="wave w3" d="M0 140 C 70 125 120 155 190 140 S 290 125 350 140 S 395 150 400 140 V200 H0Z"/>
+        </svg>
+        <i class="moon" aria-hidden="true"></i>
+        <div class="peace-big"><b id="pzSecs">0</b><span>seconds of peace</span></div>
+      </div>
+      <p class="peace-lead">That is the same as…</p>
+      <ul class="peace-list" id="peaceList">
+        <li><span class="pz-ico pz-heart" aria-hidden="true">💓</span><span class="pz-text"><b id="pzBeats">0</b> calm heartbeats</span></li>
+        <li><span class="pz-ico pz-breath" aria-hidden="true"></span><span class="pz-text"><b id="pzBreaths">0</b> slow breaths</span></li>
+        <li><span class="pz-ico" aria-hidden="true">🎵</span><span class="pz-text"><b id="pzSongs">0</b> songs of quiet</span></li>
+        <li><span class="pz-ico" aria-hidden="true">🌙</span><span class="pz-text"><b id="pzNights">0</b> nights of sleep</span></li>
+        <li><span class="pz-ico" aria-hidden="true">🌅</span><span class="pz-text"><b id="pzDays">0</b> sunrises</span></li>
+      </ul>
+      <p class="balloon-note" id="peaceNote">Every one of them is a moment you didn’t have to carry.</p>
     </section>
     <section id="panelSeconds" role="tabpanel" aria-labelledby="tabSeconds" class="days-panel" hidden>
       <p class="sec-head"><b id="secNow">0 / 60</b> <span>seconds of this minute</span></p>
