@@ -1,19 +1,25 @@
 import * as db from './db.js';
-import { computeStats, buildCalendar, clockParts, formatElapsed, toKey, fromKey, MILESTONES } from './streaks.js';
+import { computeStats, buildCalendar, splitElapsed, formatElapsed, toTimestamp, toKey, fromKey, MILESTONES } from './streaks.js';
 
 const $ = (sel) => document.querySelector(sel);
-const fmtLong = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const fmtMoment = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 const fmtShort = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 const MOOD_WORDS = ['', 'Very low', 'Low', 'Okay', 'Good', 'Great'];
-const RING_LEN = 2 * Math.PI * 52;
+const MOOD_EMOJI = ['🙂', '😞', '😕', '😐', '🙂', '😄'];
+const RING_LEN = 2 * Math.PI * 112; // matches the r="112" progress ring around the orb
 
 const PEAK_URGE = 8;                 // urge level (0–10) treated as a "peak"
 const WAIT_MS = 20 * 60 * 1000;      // "wait it out" timer
 const BREATH_PHASES = [['Breathe in…', 4], ['Hold…', 4], ['Breathe out slowly…', 6]];
 const BREATH_CYCLE = BREATH_PHASES.reduce((n, [, secs]) => n + secs, 0);
 
-const state = { settings: {}, checkins: [], editing: null, days: 0 };
+// anchorTs = the exact moment the current No Contact run began (ms); days = whole days elapsed since then.
+const state = { settings: {}, checkins: [], editing: null, days: 0, anchorTs: null };
 const urgent = { openedAt: 0, waitEnd: null, waitState: 'idle' }; // waitState: idle | running | done
+
+const pad2 = (n) => String(n).padStart(2, '0');
+const nowTime = () => { const d = new Date(); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+const startTimeOf = (settings) => settings.startTime || '00:00'; // older data has no time: midnight, as before
 
 /* ---------------- Boot ---------------- */
 init().catch((err) => {
@@ -23,6 +29,7 @@ init().catch((err) => {
 });
 
 async function init() {
+  fillMascots();
   bindUI();
   await db.openDB();
   await load();
@@ -37,7 +44,7 @@ async function init() {
   if (params.get('action') === 'checkin') $('#checkinForm input[name="status"]')?.focus();
 
   // Live clock: tick once a second, aligned to the wall-clock second so it never drifts.
-  // Also re-renders when the day changes, and catches up when the app returns to the foreground.
+  // Also re-renders when the date changes, and catches up when the app returns to the foreground.
   let lastDay = toKey();
   const tick = () => {
     if (toKey() !== lastDay) { lastDay = toKey(); render(); }
@@ -46,13 +53,18 @@ async function init() {
   };
   const loop = () => { tick(); setTimeout(loop, 1000 - (Date.now() % 1000) + 5); };
   loop();
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { syncOrbit(); tick(); } });
 }
 
 async function load() {
   const [settings, checkins] = await Promise.all([db.getAllSettings(), db.getAllCheckins()]);
   state.settings = settings;
   state.checkins = checkins;
+}
+
+function fillMascots() {
+  const tpl = $('#mascotTpl');
+  document.querySelectorAll('.mascot-slot').forEach((el) => el.replaceChildren(tpl.content.cloneNode(true)));
 }
 
 /* ---------------- Render ---------------- */
@@ -64,34 +76,35 @@ function render() {
     const f = $('#onboardForm');
     f.startDate.max = toKey();
     if (!f.startDate.value) f.startDate.value = toKey();
+    if (!f.startTime.value) f.startTime.value = nowTime();
     return;
   }
   const today = toKey();
   const goal = Number(state.settings.goal) || 90;
-  const s = computeStats(state.checkins, startDate, today);
+  const s = computeStats(state.checkins, startDate, today, { startTime: startTimeOf(state.settings) });
 
-  // Hero
+  // Hero: the calm orb
+  state.anchorTs = s.anchorTs;
   state.days = s.noContactDays;
   updateClock();
   $('#daysCount').textContent = s.noContactDays;
   $('#daysUnit').textContent = s.noContactDays === 1 ? 'day' : 'days';
-  const anchor = s.lastContact && s.lastContact >= startDate ? s.lastContact : startDate;
-  $('#sinceLabel').textContent = s.lastContact
-    ? `Since your last contact on ${fmtLong.format(fromKey(anchor))}`
-    : `Since ${fmtLong.format(fromKey(startDate))}`;
+  $('#sinceLabel').textContent = `Since ${fmtMoment.format(new Date(s.anchorTs))}`;
   const reason = state.settings.reason?.trim();
   $('#reasonQuote').hidden = !reason;
   $('#reasonQuote').textContent = reason ? `“${reason}”` : '';
 
-  const pct = Math.min(1, s.noContactDays / goal);
-  $('#ringFill').style.strokeDashoffset = String(RING_LEN * (1 - pct));
+  const pct = Math.min(1, s.elapsedDays / goal);
+  const ring = $('#ringFill');
+  ring.style.strokeDasharray = String(RING_LEN);
+  ring.style.strokeDashoffset = String(RING_LEN * (1 - pct));
   $('#goalPct').textContent = `${Math.round(pct * 100)}%`;
   $('#goalLabel').textContent = `of ${goal} days`;
 
   if (s.nextMilestone) {
     const span = s.nextMilestone - s.prevMilestone;
-    const prog = ((s.noContactDays - s.prevMilestone) / span) * 100;
-    const left = s.nextMilestone - s.noContactDays;
+    const prog = Math.min(100, Math.max(0, ((s.elapsedDays - s.prevMilestone) / span) * 100));
+    const left = Math.max(1, Math.ceil(s.nextMilestone - s.elapsedDays));
     $('#nextMilestone').textContent = `${s.nextMilestone} days · ${left} to go`;
     $('#milestoneFill').style.width = `${prog}%`;
     $('#milestoneBar').setAttribute('aria-valuenow', Math.round(prog));
@@ -101,26 +114,36 @@ function render() {
   }
 
   // Stats
+  $('#streakChipNum').textContent = s.checkinStreak;
   $('#statLongest').textContent = s.longestRun;
   $('#statStreak').textContent = s.checkinStreak;
   $('#statTotal').textContent = s.totalCheckins;
   $('#statTotalSub').textContent = `${s.heldCount} held · ${s.contactCount} contact`;
   $('#statMood').textContent = s.avgMood7 == null ? '—' : s.avgMood7.toFixed(1);
+  $('#statMoodIco').textContent = s.avgMood7 == null ? '🙂' : MOOD_EMOJI[Math.round(s.avgMood7)];
   $('#statUrge').textContent = s.avgUrge7 == null ? 'avg urge —' : `avg urge ${s.avgUrge7.toFixed(1)}/10`;
 
   renderCheckin(today);
   renderCalendar(today);
   renderMilestones(s);
   renderLog();
+  syncOrbit();
 }
 
-/** Live hours : minutes : seconds under the day count. */
+/** Live hours : minutes : seconds under the orb, plus the running total of seconds. */
 function updateClock() {
-  if (!state.settings.startDate) return;
-  const c = clockParts();
-  $('#clkH').textContent = c.h;
-  $('#clkM').textContent = c.m;
-  $('#clkS').textContent = c.s;
+  if (state.anchorTs == null || !state.settings.startDate) return;
+  const parts = splitElapsed(Date.now() - state.anchorTs);
+  if (parts.days !== state.days) { render(); return; } // crossed a 24-hour mark: refresh days, ring and milestones
+  $('#clkH').textContent = parts.h;
+  $('#clkM').textContent = parts.m;
+  $('#clkS').textContent = parts.s;
+  $('#totalSecs').textContent = parts.totalSeconds.toLocaleString('en-GB');
+}
+
+/** The bead circles once a minute; line it up with the real seconds (CSS keeps it gliding between syncs). */
+function syncOrbit() {
+  $('#orbit').style.animationDelay = `-${((Date.now() % 60000) / 1000).toFixed(2)}s`;
 }
 
 function renderCheckin(today) {
@@ -135,7 +158,9 @@ function renderCheckin(today) {
     ? `Editing ${fmtShort.format(fromKey(editing))}` : "Today's check-in";
 
   if (todayEntry && !editing) {
-    const word = todayEntry.status === 'held' ? 'You held No Contact today.' : 'You logged contact today. Tomorrow is a fresh start.';
+    const word = todayEntry.status === 'held'
+      ? 'You held No Contact today.'
+      : `You logged contact today${todayEntry.time ? ` at ${todayEntry.time}` : ''}. Tomorrow is a fresh start.`;
     $('#checkinSummary').textContent = `${word} Mood: ${MOOD_WORDS[todayEntry.mood]} · Urge ${todayEntry.urge}/10.`;
   }
   const f = $('#checkinForm');
@@ -152,86 +177,25 @@ function fillForm(entry) {
   f.urge.value = entry.urge ?? 0;
   $('#urgeOut').textContent = f.urge.value;
   f.note.value = entry.note ?? '';
+  f.time.value = entry.time ?? (entry.status === 'contact' ? '00:00' : ''); // old contact entries had no time: midnight
+  syncContactRow();
   updateUrgeAlert();
 }
 
-/* ---------------- Urgent help ---------------- */
-function updateUrgeAlert() {
-  $('#urgeAlert').hidden = Number($('#urgeInput').value) < PEAK_URGE;
-}
-
-function openUrgent() {
-  const reason = state.settings.reason?.trim();
-  $('#urgentReason').hidden = !reason;
-  $('#urgentReason').textContent = reason ? `“${reason}”` : '';
-  urgent.openedAt = performance.now();
-  $('#urgentDialog').showModal();
-  updateUrgent(); // after showModal(), so the live time is correct from the first frame
-}
-
-function closeUrgent() { $('#urgentDialog').close(); }
-
-function toggleWait() {
-  if (urgent.waitState === 'running') { urgent.waitState = 'idle'; urgent.waitEnd = null; }
-  else { urgent.waitState = 'running'; urgent.waitEnd = Date.now() + WAIT_MS; }
-  updateUrgent();
-}
-
-const mmss = (ms) => {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
-};
-
-/** Runs every second: finishes the wait timer even if the dialog is closed, and refreshes the dialog if open. */
-function updateUrgent() {
-  if (urgent.waitState === 'running' && Date.now() >= urgent.waitEnd) {
-    urgent.waitState = 'done';
-    urgent.waitEnd = null;
-    navigator.vibrate?.([120, 60, 120]);
-    if (!$('#urgentDialog').open) toast('20 minutes passed. You rode it out — how does the urge feel now?');
-  }
-  const dlg = $('#urgentDialog');
-  if (!dlg.open) return;
-
-  $('#urgentTime').textContent = formatElapsed(state.days, clockParts());
-
-  // Breathing label (the orb is animated in CSS on the same cycle, restarted each time the dialog opens)
-  let t = ((performance.now() - urgent.openedAt) / 1000) % BREATH_CYCLE;
-  for (const [label, secs] of BREATH_PHASES) {
-    if (t < secs) { $('#breathLabel').textContent = label; break; }
-    t -= secs;
-  }
-
-  const running = urgent.waitState === 'running';
-  $('#waitTime').textContent = running ? mmss(urgent.waitEnd - Date.now()) : urgent.waitState === 'done' ? '0:00 ✓' : mmss(WAIT_MS);
-  $('#waitBtn').textContent = running ? 'Cancel wait' : urgent.waitState === 'done' ? 'Wait another 20 minutes' : 'Start 20-minute wait';
-  $('#waitNote').textContent = urgent.waitState === 'done'
-    ? 'You made it through 20 minutes. How does the urge feel now?'
-    : 'Urges peak and pass. Don’t decide anything until the timer ends.';
-}
-
-function holdOn() {
-  closeUrgent();
-  toast('You’re doing it. Every second COUNTS!');
-  navigator.vibrate?.(15);
-}
-
-/**
- * Take the user to today's check-in with the urge raised to (at least) a peak so it gets logged.
- * If today's form is already open we keep whatever they've typed; we only reset it when today
- * was already saved and has to be reopened for editing.
- */
-function logUrge() {
-  closeUrgent();
-  const today = toKey();
+/** Show the "what time was the contact?" field only when logging contact. */
+function syncContactRow() {
   const f = $('#checkinForm');
-  if (f.hidden || f.date.value !== today) startEdit(today);
-  else f.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  const urge = Math.max(Number(f.urge.value) || 0, PEAK_URGE);
-  f.urge.value = urge;
-  $('#urgeOut').textContent = urge;
-  f.dataset.dirty = '1';
-  updateUrgeAlert();
+  const contact = f.elements.status.value === 'contact';
+  $('#contactTimeRow').hidden = !contact;
+  f.time.required = contact;
+}
+
+function onStatusChange() {
+  const f = $('#checkinForm');
+  if (f.elements.status.value === 'contact' && !f.time.value) {
+    f.time.value = f.date.value === toKey() ? nowTime() : '12:00';
+  }
+  syncContactRow();
 }
 
 function renderCalendar(today) {
@@ -276,16 +240,96 @@ function renderLog() {
         ${c.note ? '<div class="log-note"></div>' : ''}
       </div>
       <div class="log-actions">
-        <button class="icon-btn" data-act="edit" aria-label="Edit entry"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
-        <button class="icon-btn" data-act="delete" aria-label="Delete entry"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M5 7h14M10 7V4h4v3m-7 0 1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
+        <button class="icon-btn" data-act="edit" aria-label="Edit entry"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></button>
+        <button class="icon-btn" data-act="delete" aria-label="Delete entry"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M5 7h14M10 7V4h4v3m-7 0 1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></button>
       </div>`;
-    li.querySelector('.log-title').textContent = `${fmtShort.format(fromKey(c.date))} · ${c.status === 'held' ? 'Held No Contact' : 'Had contact'}`;
-    li.querySelector('.log-meta').textContent = `Mood ${MOOD_WORDS[c.mood] ?? '—'} · Urge ${c.urge}/10`;
+    li.querySelector('.log-dot').textContent = c.status === 'held' ? '✓' : '✕';
+    li.querySelector('.log-title').textContent = `${fmtShort.format(fromKey(c.date))} · ${c.status === 'held' ? 'Held No Contact' : `Had contact${c.time ? ` at ${c.time}` : ''}`}`;
+    li.querySelector('.log-meta').textContent = `${MOOD_EMOJI[c.mood] ?? ''} ${MOOD_WORDS[c.mood] ?? '—'} · Urge ${c.urge}/10`;
     if (c.note) li.querySelector('.log-note').textContent = c.note;
     li.querySelector('[data-act="edit"]').addEventListener('click', () => startEdit(c.date));
     li.querySelector('[data-act="delete"]').addEventListener('click', () => removeEntry(c.date));
     return li;
   }));
+}
+
+/* ---------------- Urgent help ---------------- */
+function updateUrgeAlert() {
+  $('#urgeAlert').hidden = Number($('#urgeInput').value) < PEAK_URGE;
+}
+
+function openUrgent() {
+  const reason = state.settings.reason?.trim();
+  $('#urgentReason').hidden = !reason;
+  $('#urgentReason').textContent = reason ? `“${reason}”` : '';
+  urgent.openedAt = performance.now();
+  $('#urgentDialog').showModal();
+  updateUrgent(); // after showModal(), so the live time is correct from the first frame
+}
+
+function closeUrgent() { $('#urgentDialog').close(); }
+
+function toggleWait() {
+  if (urgent.waitState === 'running') { urgent.waitState = 'idle'; urgent.waitEnd = null; }
+  else { urgent.waitState = 'running'; urgent.waitEnd = Date.now() + WAIT_MS; }
+  updateUrgent();
+}
+
+const mmss = (ms) => {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+};
+
+/** Runs every second: finishes the wait timer even if the dialog is closed, and refreshes the dialog if open. */
+function updateUrgent() {
+  if (urgent.waitState === 'running' && Date.now() >= urgent.waitEnd) {
+    urgent.waitState = 'done';
+    urgent.waitEnd = null;
+    navigator.vibrate?.([120, 60, 120]);
+    if (!$('#urgentDialog').open) toast('20 minutes passed. You rode it out — how does the urge feel now?');
+  }
+  const dlg = $('#urgentDialog');
+  if (!dlg.open) return;
+
+  $('#urgentTime').textContent = state.anchorTs == null ? '' : formatElapsed(splitElapsed(Date.now() - state.anchorTs));
+
+  // Breathing label (the orb is animated in CSS on the same cycle, restarted each time the dialog opens)
+  let t = ((performance.now() - urgent.openedAt) / 1000) % BREATH_CYCLE;
+  for (const [label, secs] of BREATH_PHASES) {
+    if (t < secs) { $('#breathLabel').textContent = label; break; }
+    t -= secs;
+  }
+
+  const running = urgent.waitState === 'running';
+  $('#waitTime').textContent = running ? mmss(urgent.waitEnd - Date.now()) : urgent.waitState === 'done' ? '0:00 ✓' : mmss(WAIT_MS);
+  $('#waitBtn').textContent = running ? 'Cancel wait' : urgent.waitState === 'done' ? 'Wait another 20 minutes' : 'Start 20-minute wait';
+  $('#waitNote').textContent = urgent.waitState === 'done'
+    ? 'You made it through 20 minutes. How does the urge feel now?'
+    : 'Urges peak and pass. Don’t decide anything until the timer ends.';
+}
+
+function holdOn() {
+  closeUrgent();
+  toast('You’re doing it. Every second COUNTS!');
+  navigator.vibrate?.(15);
+}
+
+/**
+ * Take the user to today's check-in with the urge raised to (at least) a peak so it gets logged.
+ * If today's form is already open we keep whatever they've typed; we only reset it when today
+ * was already saved and has to be reopened for editing.
+ */
+function logUrge() {
+  closeUrgent();
+  const today = toKey();
+  const f = $('#checkinForm');
+  if (f.hidden || f.date.value !== today) startEdit(today);
+  else f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const urge = Math.max(Number(f.urge.value) || 0, PEAK_URGE);
+  f.urge.value = urge;
+  $('#urgeOut').textContent = urge;
+  f.dataset.dirty = '1';
+  updateUrgeAlert();
 }
 
 /* ---------------- Actions ---------------- */
@@ -315,16 +359,22 @@ async function onCheckinSubmit(e) {
     mood: Number(data.get('mood')),
     urge: Number(data.get('urge')),
     note: String(data.get('note') || '').trim(),
+    time: data.get('status') === 'contact' ? String(data.get('time') || '') : '', // only contact moments need a time
   };
   if (entry.date > toKey()) return toast("You can't check in for a future date.");
   if (entry.date < state.settings.startDate) return toast('That date is before your start date.');
+  if (entry.status === 'contact') {
+    const ts = toTimestamp(entry.date, entry.time);
+    if (ts > Date.now()) return toast("That time hasn't happened yet.");
+    if (ts < toTimestamp(state.settings.startDate, startTimeOf(state.settings))) return toast('That moment is before your No Contact start.');
+  }
 
-  const before = computeStats(state.checkins, state.settings.startDate);
+  const before = computeStats(state.checkins, state.settings.startDate, toKey(), { startTime: startTimeOf(state.settings) });
   await db.saveCheckin(entry);
   state.editing = null;
   delete f.dataset.dirty;
   await load(); render();
-  const after = computeStats(state.checkins, state.settings.startDate);
+  const after = computeStats(state.checkins, state.settings.startDate, toKey(), { startTime: startTimeOf(state.settings) });
 
   if (entry.status === 'contact') toast('Logged. One moment doesn’t erase your progress — your longest run still counts.');
   else if (after.milestonesReached.length > before.milestonesReached.length) toast(`Milestone reached: ${after.milestonesReached.at(-1)} days. Be proud of that.`);
@@ -334,13 +384,17 @@ async function onCheckinSubmit(e) {
 
 async function onOnboard(e) {
   e.preventDefault();
-  const data = new FormData(e.currentTarget);
+  const f = e.currentTarget;
+  const data = new FormData(f);
   const startDate = data.get('startDate');
-  if (startDate > toKey()) return toast('Pick today or a date in the past.');
+  const startTime = data.get('startTime');
+  if (toTimestamp(startDate, startTime) > Date.now()) return toast('That moment is in the future — pick now or earlier.');
   await db.setSetting('startDate', startDate);
+  await db.setSetting('startTime', startTime);
   await db.setSetting('goal', Number(data.get('goal')));
   await db.setSetting('reason', String(data.get('reason') || '').trim());
   await load(); render();
+  window.scrollTo({ top: 0 }); // start at the top, where the calm orb is
   toast('You’re all set. Check in once a day.');
 }
 
@@ -348,6 +402,8 @@ function openSettings() {
   const f = $('#settingsForm');
   f.startDate.value = state.settings.startDate ?? toKey();
   f.startDate.max = toKey();
+  f.startTime.value = startTimeOf(state.settings);
+  f.startTime.setCustomValidity('');
   f.goal.value = state.settings.goal ?? 90;
   f.reason.value = state.settings.reason ?? '';
   $('#iosHint').hidden = !isIOS() || isStandalone();
@@ -355,12 +411,25 @@ function openSettings() {
   $('#settingsDialog').showModal();
 }
 
+/** Block saving a start moment that hasn't happened yet, with a message shown inside the dialog. */
+function onSettingsSubmit(e) {
+  if (e.submitter?.value !== 'save') return;
+  const f = e.currentTarget;
+  f.startTime.setCustomValidity('');
+  if (toTimestamp(f.startDate.value, f.startTime.value) > Date.now()) {
+    f.startTime.setCustomValidity('That moment is in the future — pick now or earlier.');
+    f.startTime.reportValidity();
+    e.preventDefault();
+  }
+}
+
 async function onSettingsClose() {
   const dlg = $('#settingsDialog');
   if (dlg.returnValue !== 'save') return;
   const f = $('#settingsForm');
-  if (!f.startDate.value || f.startDate.value > toKey()) return toast('Start date must be today or earlier.');
+  if (!f.startDate.value || !f.startTime.value || toTimestamp(f.startDate.value, f.startTime.value) > Date.now()) return toast('Start moment must be now or earlier.');
   await db.setSetting('startDate', f.startDate.value);
+  await db.setSetting('startTime', f.startTime.value);
   await db.setSetting('goal', Math.max(1, Number(f.goal.value) || 90));
   await db.setSetting('reason', f.reason.value.trim());
   await load(); render();
@@ -397,6 +466,7 @@ async function resetAll() {
   if (!confirm('Delete every check-in and setting on this device? This cannot be undone. Consider exporting a backup first.')) return;
   await db.clearAll();
   state.editing = null;
+  state.anchorTs = null;
   await load();
   $('#settingsDialog').close();
   render();
@@ -421,6 +491,7 @@ function bindUI() {
   const cf = $('#checkinForm');
   cf.addEventListener('submit', onCheckinSubmit);
   cf.addEventListener('input', () => { cf.dataset.dirty = '1'; });
+  cf.addEventListener('change', (e) => { if (e.target.name === 'status') onStatusChange(); });
   $('#urgeInput').addEventListener('input', (e) => { $('#urgeOut').textContent = e.target.value; updateUrgeAlert(); });
   $('#urgentBtn').addEventListener('click', openUrgent);
   $('#urgeAlertBtn').addEventListener('click', openUrgent);
@@ -431,6 +502,8 @@ function bindUI() {
   $('#editTodayBtn').addEventListener('click', () => startEdit(toKey()));
   $('#cancelEditBtn').addEventListener('click', () => { state.editing = null; delete cf.dataset.dirty; render(); });
   $('#settingsBtn').addEventListener('click', openSettings);
+  $('#settingsForm').addEventListener('submit', onSettingsSubmit);
+  $('#settingsForm').addEventListener('input', (e) => { if (e.target.name === 'startDate' || e.target.name === 'startTime') e.currentTarget.startTime.setCustomValidity(''); });
   $('#settingsDialog').addEventListener('close', onSettingsClose);
   $('#exportBtn').addEventListener('click', exportBackup);
   $('#importFile').addEventListener('change', importBackup);

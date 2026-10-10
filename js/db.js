@@ -3,9 +3,11 @@
  *
  * Database: "clear-days" (version 1)
  *   checkins  keyPath "date" (YYYY-MM-DD, local time) → one entry per day
- *             { date, status: 'held' | 'contact', mood: 1-5, urge: 0-10, note, createdAt, updatedAt }
+ *             { date, status: 'held' | 'contact', mood: 1-5, urge: 0-10, note, time?, createdAt, updatedAt }
+ *             `time` ("HH:MM") is only set for 'contact' entries: the moment the count restarts.
  *             index "byStatus"
- *   settings  keyPath "key" → { key, value }
+ *   settings  keyPath "key" → { key, value }  (startDate, startTime "HH:MM", goal, reason)
+ *             No schema change was needed for startTime / time: records are free-form objects.
  */
 const DB_NAME = 'clear-days';
 const DB_VERSION = 1;

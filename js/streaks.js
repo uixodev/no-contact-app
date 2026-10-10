@@ -26,38 +26,60 @@ export function addDays(key, n) {
   return toKey(d);
 }
 
+export const DAY_MS = 86400000;
+
+/** Local timestamp (ms) for a "YYYY-MM-DD" key plus an optional "HH:MM" (defaults to midnight). */
+export function toTimestamp(dateKey, time = '00:00') {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const [hh, mm] = (/^\d{1,2}:\d{2}$/.test(time || '') ? time : '00:00').split(':').map(Number);
+  return new Date(y, m - 1, d, hh, mm, 0, 0).getTime();
+}
+
 /**
- * Local time of day as zero-padded parts. Together with `noContactDays` (whole calendar
- * days since the start/contact day, which begins at local midnight) this is the live
- * hours:minutes:seconds part of the counter. Using calendar days keeps it DST-safe.
+ * Break an elapsed time (ms) into days / hours / minutes / seconds for the live counter.
+ * It is exact elapsed time, so the counter is the real time since the moment contact ended.
  */
-export function clockParts(now = new Date()) {
+export function splitElapsed(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
   const p = (n) => String(n).padStart(2, '0');
-  return { h: p(now.getHours()), m: p(now.getMinutes()), s: p(now.getSeconds()) };
+  return {
+    days: Math.floor(total / 86400),
+    h: p(Math.floor((total % 86400) / 3600)),
+    m: p(Math.floor((total % 3600) / 60)),
+    s: p(total % 60),
+    totalSeconds: total,
+  };
 }
 
 /** "12 days 07:45:09" — a single-string version for the urgent screen and screen readers. */
-export function formatElapsed(days, parts) {
-  return `${days} ${days === 1 ? 'day' : 'days'} ${parts.h}:${parts.m}:${parts.s}`;
+export function formatElapsed(parts) {
+  return `${parts.days} ${parts.days === 1 ? 'day' : 'days'} ${parts.h}:${parts.m}:${parts.s}`;
 }
 
 /**
- * computeStats(checkins, startDate, today)
- *  - noContactDays: full days since the start date or the most recent "contact" check-in.
- *  - longestRun: longest gap between start / contact events (including the current run).
+ * computeStats(checkins, startDate, today, { startTime, now })
+ *  - The count runs from an exact moment: the start date + start time, or the most recent
+ *    "contact" check-in (its date + optional time; no time means midnight).
+ *  - noContactDays: whole 24-hour days elapsed since that moment. elapsedMs is the exact figure.
+ *  - longestRun: longest gap between start / contact moments (including the current run).
  *  - checkinStreak: consecutive days with any check-in, ending today (or yesterday, as a grace day).
  */
-export function computeStats(checkins, startDate, today = toKey()) {
+export function computeStats(checkins, startDate, today = toKey(), { startTime = '00:00', now = Date.now() } = {}) {
   const sorted = [...checkins].sort((a, b) => a.date.localeCompare(b.date));
-  const contacts = sorted.filter((c) => c.status === 'contact' && c.date >= (startDate || '0000')).map((c) => c.date);
-  const anchors = [startDate, ...contacts].filter(Boolean);
+  const startTs = startDate ? toTimestamp(startDate, startTime) : null;
+  const contacts = startTs == null ? [] : sorted
+    .filter((c) => c.status === 'contact')
+    .map((c) => ({ date: c.date, ts: toTimestamp(c.date, c.time) }))
+    .filter((c) => c.ts >= startTs);
+  const anchors = startTs == null ? [] : [startTs, ...contacts.map((c) => c.ts)];
 
-  const lastAnchor = anchors.length ? anchors[anchors.length - 1] : null;
-  const noContactDays = lastAnchor ? Math.max(0, diffDays(lastAnchor, today)) : 0;
+  const anchorTs = anchors.length ? anchors[anchors.length - 1] : null;
+  const elapsedMs = anchorTs == null ? 0 : Math.max(0, now - anchorTs);
+  const noContactDays = Math.floor(elapsedMs / DAY_MS);
 
   let longestRun = noContactDays;
   for (let i = 1; i < anchors.length; i++) {
-    longestRun = Math.max(longestRun, diffDays(anchors[i - 1], anchors[i]));
+    longestRun = Math.max(longestRun, Math.floor((anchors[i] - anchors[i - 1]) / DAY_MS));
   }
 
   const dates = new Set(sorted.map((c) => c.date));
@@ -75,12 +97,15 @@ export function computeStats(checkins, startDate, today = toKey()) {
 
   return {
     noContactDays,
+    elapsedMs,
+    elapsedDays: elapsedMs / DAY_MS,
+    anchorTs,
     longestRun,
     checkinStreak,
     totalCheckins: sorted.length,
     heldCount: held.length,
     contactCount: contacts.length,
-    lastContact: contacts[contacts.length - 1] ?? null,
+    lastContact: contacts.length ? contacts[contacts.length - 1].date : null,
     checkedInToday: dates.has(today),
     avgMood7: avg(recent, 'mood'),
     avgUrge7: avg(recent, 'urge'),
