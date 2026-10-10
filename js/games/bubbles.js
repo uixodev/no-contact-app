@@ -23,7 +23,7 @@ export function createBubbles(root) {
   }
   function spawn() {
     const n = Math.min(20, 4 + wave * 2);
-    const radius = Math.max(20, Math.min(30, Math.sqrt((W * H) / (n * 14))));
+    const radius = Math.max(24, Math.min(32, Math.sqrt((W * H) / (n * 14))));
     bubbles = Array.from({ length: n }, (_, i) => ({
       n: i + 1, r: radius, x: radius + Math.random() * (W - radius * 2), y: radius + Math.random() * (H - radius * 2),
       vx: (Math.random() - 0.5) * 22, vy: (Math.random() - 0.5) * 22, ph: Math.random() * 6.28, col: PALETTE[i % PALETTE.length], shake: 0, pop: 0, gone: false,
@@ -69,7 +69,7 @@ export function createBubbles(root) {
   }
   cv.addEventListener('pointerdown', (e) => {
     const rect = cv.getBoundingClientRect(), x = e.clientX - rect.left, y = e.clientY - rect.top;
-    const hit = [...bubbles].reverse().find((b) => !b.gone && Math.hypot(b.x - x, b.y - y) <= b.r + 6);
+    const hit = [...bubbles].reverse().find((b) => !b.gone && Math.hypot(b.x - x, b.y - y) <= b.r + 10);
     if (!hit) return;
     if (hit.n !== next) { hit.shake = 0.4; navigator.vibrate?.([5, 30, 5]); $('.b-note').textContent = `Look for ${next}.`; return; }
     hit.gone = true; burst(hit); navigator.vibrate?.(8); next++;

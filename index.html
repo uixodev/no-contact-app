@@ -429,7 +429,7 @@
             <button type="button" class="tool" data-game="bubbles"><span class="tool-ico" aria-hidden="true">🫧</span><strong>Count &amp; pop</strong><small>Drifting bubbles</small></button>
             <button type="button" class="tool" data-game="sort"><span class="tool-ico" aria-hidden="true">🧪</span><strong>Sort</strong><small>Pour the colours</small></button>
             <button type="button" class="tool" data-game="echo"><span class="tool-ico" aria-hidden="true">🔔</span><strong>Echo</strong><small>Repeat the pattern</small></button>
-            <button type="button" class="tool" data-game="memory" id="playMemory"><span class="tool-ico" aria-hidden="true">🃏</span><strong>Memory match</strong><small>Find the pairs</small></button>
+            <button type="button" class="tool" data-game="memory" id="playMemory"><span class="tool-ico" aria-hidden="true">🃏</span><strong>Memory match</strong><span class="pick-best" data-best="memory"></span><small>Find the pairs</small></button>
             <button type="button" class="tool tool-wide" data-game="merge" id="playMerge"><span class="tool-ico" aria-hidden="true">🔢</span><strong>Merge</strong><small>Swipe and combine numbers</small></button>
           </div>
         </section>
@@ -489,12 +489,12 @@
       <button class="icon-btn" type="button" id="gameClose" aria-label="Close">✕</button>
     </header>
     <section id="gameMenu" class="game-view">
-      <p class="muted">Pick one. Both are calm, and neither can be lost for good.</p>
+      <p class="muted">Pick one. All of them are calm, and none can be lost for good.</p>
       <button type="button" class="game-pick" id="gamePickMemory"><span aria-hidden="true">🃏</span><strong>Memory match</strong><small>Flip cards and find the pairs. Four levels, no timer.</small></button>
-      <button type="button" class="game-pick" id="gamePickMerge"><span aria-hidden="true">🔢</span><strong>Merge</strong><small>Swipe the tiles and combine equal numbers. Chase your best score.</small></button>
-      <button type="button" class="game-pick" data-pick="bubbles"><span aria-hidden="true">🫧</span><strong>Count &amp; pop</strong><small>Slow-drifting bubbles. Pop them in order, 1, 2, 3… Soft focus, soft colours.</small></button>
-      <button type="button" class="game-pick" data-pick="sort"><span aria-hidden="true">🧪</span><strong>Sort</strong><small>Pour the colours until each tube holds one. No timer, undo any time.</small></button>
-      <button type="button" class="game-pick" data-pick="echo"><span aria-hidden="true">🔔</span><strong>Echo</strong><small>Watch glowing orbs sing a pattern, then play it back. It asks for your full attention.</small></button>
+      <button type="button" class="game-pick" id="gamePickMerge"><span aria-hidden="true">🔢</span><strong>Merge</strong><span class="pick-best" data-best="merge"></span><small>Swipe the tiles and combine equal numbers. Chase your best score.</small></button>
+      <button type="button" class="game-pick" data-pick="bubbles"><span aria-hidden="true">🫧</span><strong>Count &amp; pop</strong><span class="pick-best" data-best="bubbles"></span><small>Slow-drifting bubbles. Pop them in order, 1, 2, 3… Soft focus, soft colours.</small></button>
+      <button type="button" class="game-pick" data-pick="sort"><span aria-hidden="true">🧪</span><strong>Sort</strong><span class="pick-best" data-best="sort"></span><small>Pour the colours until each tube holds one. No timer, undo any time.</small></button>
+      <button type="button" class="game-pick" data-pick="echo"><span aria-hidden="true">🔔</span><strong>Echo</strong><span class="pick-best" data-best="echo"></span><small>Watch glowing orbs sing a pattern, then play it back. It asks for your full attention.</small></button>
     </section>
     <section id="gameMemory" class="game-view" hidden>
       <div class="game-bar"><strong id="memLevel">Level 1</strong><span id="memMoves" aria-live="polite">0 moves</span></div>
