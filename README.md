@@ -4,6 +4,8 @@ A Progressive Web App built with plain HTML, CSS and JavaScript. You can install
 
 ## Features
 - **Dashboard:** days of No Contact, a ring showing progress to your goal, a bar towards the next milestone, your longest run, check-in streak, average mood and urge over the last 7 check-ins, a 15-week heatmap, milestones and recent entries.
+- **Live counter:** the day count is joined by hours, minutes and seconds that tick every second, with an "Every second COUNTS!" reminder. The clock counts from the start of your start date (or last contact day), since only the date is stored.
+- **Urgent help:** an "I want to reach out right now" button, shown on the dashboard and offered automatically when you set the urge slider to 8 or more. It opens a calming screen with your live time at stake, your reason, a breathing guide, a 20-minute wait timer, things to do instead, and a shortcut to log the urge.
 - **Daily check-in:** choose held or had contact, then add mood (1–5), urge level (0–10) and an optional note. You can edit any past day by clicking it on the heatmap or in the log.
 - **Installable:** includes a web app manifest, a custom install button (`beforeinstallprompt`), an iOS "Add to Home Screen" hint, maskable icons and a home-screen shortcut ("Check in today").
 - **Offline:** the service worker precaches the app shell, loads pages network-first with a cached fallback, caches fonts with stale-while-revalidate, and shows an "Update ready" prompt when a new version is available.
@@ -49,6 +51,7 @@ Each day has one check-in because the date is the key, so saving again replaces 
 ## Customising
 - **Shipping changes:** increase `CACHE_VERSION` in `sw.js` whenever you edit a cached file, otherwise users keep the old version.
 - **Milestones:** edit `MILESTONES` in `js/streaks.js`.
+- **Urgent help:** change `PEAK_URGE` (default 8) or `WAIT_MS` (default 20 minutes) at the top of `js/app.js`.
 - **Colours and fonts:** change the CSS custom properties at the top of `css/styles.css`, and update `theme_color` in the manifest to match.
 - **New fields:** add them to the form in `index.html`, read them in `onCheckinSubmit` in `app.js`, and add an `if (event.oldVersion < 2)` migration in `db.js` if you need new stores or indexes.
 
