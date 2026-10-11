@@ -114,8 +114,10 @@ button, a, label, [role='button'] { touch-action: manipulation; }
 
 /* Hide the scroll bar on phones and tablets (the page still scrolls; desktop keeps its bar) */
 @media (max-width: 760px), (pointer: coarse) {
-  html, body, dialog, .calendar-wrap, .rescue-body, .entry-body, .edit-body, textarea { scrollbar-width: none; -ms-overflow-style: none; }
-  html::-webkit-scrollbar, body::-webkit-scrollbar, dialog::-webkit-scrollbar, .calendar-wrap::-webkit-scrollbar, .rescue-body::-webkit-scrollbar, .entry-body::-webkit-scrollbar, .edit-body::-webkit-scrollbar, textarea::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
+  /* while a pop-up is open the page behind must not scroll (its scroll line used to peek out at the edge) */
+  html:has(dialog[open]), body:has(dialog[open]) { overflow: hidden; }
 }
 
 .muted { color: var(--color-muted); font-weight: 600; }
