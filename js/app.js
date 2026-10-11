@@ -77,7 +77,7 @@ function showTab(name, { scroll = true } = {}) {
     if (t.dataset.tab === name) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
   });
   if (name === 'home') syncOrbit();
-  if (scroll) window.scrollTo({ top: 0 });
+  if (scroll) scrollPage({ top: 0 });
 }
 /** Go to a section and keep the address bar (and the Back button) in step. */
 function goTab(name) {
@@ -725,7 +725,7 @@ async function onOnboard(e) {
   await db.setSetting('goal', Number(data.get('goal')));
   await db.setSetting('reason', String(data.get('reason') || '').trim());
   await load(); render();
-  window.scrollTo({ top: 0 }); // start at the top, where the calm orb is
+  scrollPage({ top: 0 }); // start at the top, where the calm orb is
   toast('You’re all set. Check in once a day.');
 }
 
@@ -884,7 +884,7 @@ function bindUI() {
   window.addEventListener('hashchange', () => { if (tabFromHash() !== currentTab) showTab(tabFromHash()); });
   $('#tabbar').addEventListener('click', (e) => {
     const tab = e.target.closest('.tab');
-    if (tab && tab.dataset.tab === currentTab) { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    if (tab && tab.dataset.tab === currentTab) { e.preventDefault(); scrollPage({ top: 0, behavior: 'smooth' }); }
   });
   $('#urgentClose').addEventListener('click', rescue.close);
   $('#editTodayBtn').addEventListener('click', () => startEdit(toKey()));
@@ -924,6 +924,12 @@ function toast(msg, actionLabel, onAction) {
   el.hidden = false;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { el.hidden = true; }, actionLabel ? 8000 : 3500);
+}
+
+/** On phones the page scrolls inside #scroller (so the browser's own scroll line has nothing to draw); on desktop it is the window. */
+function scrollPage(opts) {
+  const sc = $('#scroller');
+  (sc && getComputedStyle(sc).position === 'fixed' ? sc : window).scrollTo(opts);
 }
 
 /* ---------------- PWA plumbing ---------------- */
