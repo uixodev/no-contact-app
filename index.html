@@ -422,6 +422,17 @@
         </button>
       </section>
 
+        <section class="card check-card" aria-labelledby="checkCardTitle">
+          <h2 id="checkCardTitle">Want to check on him?</h2>
+          <p class="muted small">Looking will not change anything. Pick what you are tempted to open, and take one minute first.</p>
+          <div class="tools">
+            <button type="button" class="tool" data-check="account"><span class="tool-ico" aria-hidden="true">👤</span><strong>His account</strong><small>Social media</small></button>
+            <button type="button" class="tool" data-check="group"><span class="tool-ico" aria-hidden="true">👥</span><strong>The group</strong><small>Chat or community</small></button>
+            <button type="button" class="tool tool-wide" data-check="gmail"><span class="tool-ico" aria-hidden="true">✉️</span><strong>My Gmail</strong><small>Looking for a message from him</small></button>
+          </div>
+          <p class="muted small check-count" id="checkCount" hidden></p>
+        </section>
+
         <section class="card game-card" aria-labelledby="gameCardTitle">
           <h2 id="gameCardTitle">Distract me</h2>
           <p class="muted small">Give your hands and mind something else to do for a few minutes. The urge will pass.</p>
@@ -482,7 +493,56 @@
   </nav>
 
   <!-- Urgent help: a guided, step-by-step rescue for the peak of an urge. Steps are rendered by app.js. -->
-      <dialog id="gameDialog" class="game" aria-labelledby="gameTitle"><div class="game-inner">
+        <dialog id="checkDialog" class="check" aria-labelledby="checkTitle"><div class="check-inner">
+    <header class="check-top"><h2 id="checkTitle" tabindex="-1">Before you look</h2>
+      <button class="game-nav" type="button" id="checkClose" aria-label="Close"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
+    <div class="check-body">
+      <section id="checkTruth" class="check-stage">
+        <div class="disclaimer" role="note">
+          <strong>🛑 Looking at <span id="checkWhat">his account</span> will not change anything.</strong>
+          <ul>
+            <li>Nothing you find will fix it, explain it or make it hurt less.</li>
+            <li>You do not need to say anything to him. You never owe him a message.</li>
+            <li id="checkLine"></li>
+          </ul>
+        </div>
+        <h3 class="check-h">Remember how it really ended</h3>
+        <div id="hurtList" class="hurt-list"></div>
+        <p class="muted small" id="hurtEmpty">Write the words he said that hurt, exactly as he said them. They stay on this device and are part of your backup.</p>
+        <button type="button" class="btn btn-ghost btn-sm" id="hurtOpen">✏️ Edit</button>
+        <div id="hurtEdit" hidden>
+          <label class="field"><span class="field-label">One per line</span><textarea id="hurtText" rows="4" maxlength="1600" placeholder="His words, one per line"></textarea></label>
+          <button type="button" class="btn btn-primary btn-sm" id="hurtSave">Save</button>
+        </div>
+        <h3 class="check-h">Why is he still in your head?</h3>
+        <div class="picks" id="reasonChips"></div>
+        <p class="reason-reply" id="reasonReply" aria-live="polite"></p>
+        <label class="field"><span class="field-label">Say it in your own words <span class="optional">optional, not saved</span></span><textarea id="reasonText" class="autosize" rows="2" maxlength="500" placeholder="Just for you"></textarea></label>
+        <button type="button" class="btn btn-primary btn-lg btn-block" id="checkGo">Let him go</button>
+      </section>
+      <section id="checkSwipe" class="check-stage" hidden>
+        <div class="flick-pips" id="flickPips" aria-hidden="true"></div>
+        <div class="mind" id="mindStage">
+          <i class="thought t1"></i><i class="thought t2"></i><i class="thought t3"></i>
+          <button type="button" class="him" id="himToken" aria-label="Him. Swipe him out of your mind, or press Enter to push him away">
+            <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="38" r="17"/><path d="M16 92c2-24 17-34 34-34s32 10 34 34Z"/></svg>
+            <span class="him-badge" aria-hidden="true">👤</span>
+          </button>
+          <p class="mind-empty" aria-hidden="true">✨</p>
+        </div>
+        <p class="balloon-note" id="flickNote" aria-live="polite"></p>
+        <button type="button" class="btn btn-ghost btn-sm" id="pushBtn">Push him away</button>
+      </section>
+      <section id="checkCalm" class="check-stage" hidden>
+        <div class="calm-card"><p class="calm-ico" aria-hidden="true">🌿</p><h3>He is not here.</h3>
+          <p>That space in your mind is yours again. Notice how quiet it is. Take one slow breath in, and let it out.</p>
+          <p class="muted" id="calmCount"></p></div>
+        <button type="button" class="btn btn-primary btn-lg btn-block" id="calmDone">I am okay</button>
+        <button type="button" class="btn btn-ghost btn-lg btn-block" id="calmGame">🎮 Play something calm</button>
+      </section>
+    </div>
+  </div></dialog>
+  <dialog id="gameDialog" class="game" aria-labelledby="gameTitle"><div class="game-inner">
     <header class="game-top">
       <button class="game-nav" type="button" id="gameBack" aria-label="Back to games" hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <h2 id="gameTitle" tabindex="-1">Distract me</h2>

@@ -6,6 +6,7 @@ import { lineChart } from './charts.js';
 import { confetti } from './fx.js';
 import { createDays } from './days.js';
 import { createGames } from './games.js';
+import { createCheckup } from './checkup.js';
 
 const $ = (sel) => document.querySelector(sel);
 const fmtMoment = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -25,6 +26,11 @@ const state = { settings: {}, checkins: [], urges: [], editing: null, days: 0, a
 
 // The guided "urgent help" flow lives in rescue.js; it gets what it needs from here.
 const games = createGames();
+const checkup = createCheckup({
+  get: (k) => state.settings[k],
+  set: async (k, v) => { await db.setSetting(k, v); state.settings[k] = v; renderCheckCount(); },
+  onGames: { open: (g) => games.open(g), update: () => {} },
+});
 const daysPlay = createDays(() => ({ days: state.days, anchorTs: state.anchorTs ?? Date.now() }));
 const rescue = createRescue({
   settings: () => state.settings,
@@ -201,6 +207,7 @@ function render() {
 
   renderCheckin(today);
   renderToday(today);
+  renderCheckCount();
   renderWeek(today, s);
   renderGoal(today);
   renderInsights();
@@ -226,6 +233,13 @@ function updateClock() {
 /** The bead circles once a minute; line it up with the real seconds (CSS keeps it gliding between syncs). */
 function syncOrbit() {
   $('#orbit').style.animationDelay = `-${((Date.now() % 60000) / 1000).toFixed(2)}s`;
+}
+
+/** "You chose not to look N times" under the check-on-him buttons. */
+function renderCheckCount() {
+  const n = Number(state.settings.checkResisted) || 0;
+  $('#checkCount').hidden = !n;
+  $('#checkCount').textContent = n ? `🛡️ You chose not to look ${n} ${n === 1 ? 'time' : 'times'}.` : '';
 }
 
 /** Home's "Today" card and the red dot on the Check-in tab. */
@@ -890,6 +904,7 @@ function bindUI() {
   $('#exportBtn').addEventListener('click', exportBackup);
   $('#importFile').addEventListener('change', importBackup);
   $('#orbBtn').addEventListener('click', () => daysPlay.open());
+  document.querySelectorAll('[data-check]').forEach((b) => b.addEventListener('click', () => checkup.open(b.dataset.check)));
   document.querySelectorAll('[data-game]').forEach((b) => b.addEventListener('click', () => games.open(b.dataset.game)));
   $('#urgentGame').addEventListener('click', () => games.open('menu'));
   $('#resetBtn').addEventListener('click', resetAll);
