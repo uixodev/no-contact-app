@@ -28,8 +28,8 @@ const state = { settings: {}, checkins: [], urges: [], editing: null, days: 0, a
 const games = createGames();
 const checkup = createCheckup({
   get: (k) => state.settings[k],
-  set: async (k, v) => { await db.setSetting(k, v); state.settings[k] = v; renderCheckCount(); },
-  onGames: { open: (g) => games.open(g), update: () => {} },
+  set: async (k, v) => { await db.setSetting(k, v); state.settings[k] = v; },
+  onGames: { open: (g) => games.open(g) },
 });
 const daysPlay = createDays(() => ({ days: state.days, anchorTs: state.anchorTs ?? Date.now() }));
 const rescue = createRescue({
@@ -207,7 +207,7 @@ function render() {
 
   renderCheckin(today);
   renderToday(today);
-  renderCheckCount();
+  checkup.refresh();
   renderWeek(today, s);
   renderGoal(today);
   renderInsights();
@@ -233,13 +233,6 @@ function updateClock() {
 /** The bead circles once a minute; line it up with the real seconds (CSS keeps it gliding between syncs). */
 function syncOrbit() {
   $('#orbit').style.animationDelay = `-${((Date.now() % 60000) / 1000).toFixed(2)}s`;
-}
-
-/** "You chose not to look N times" under the check-on-him buttons. */
-function renderCheckCount() {
-  const n = Number(state.settings.checkResisted) || 0;
-  $('#checkCount').hidden = !n;
-  $('#checkCount').textContent = n ? `🛡️ You chose not to look ${n} ${n === 1 ? 'time' : 'times'}.` : '';
 }
 
 /** Home's "Today" card and the red dot on the Check-in tab. */

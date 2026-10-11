@@ -69,7 +69,8 @@ export function createBubbles(root) {
   }
   cv.addEventListener('pointerdown', (e) => {
     const rect = cv.getBoundingClientRect(), x = e.clientX - rect.left, y = e.clientY - rect.top;
-    const hit = [...bubbles].reverse().find((b) => !b.gone && Math.hypot(b.x - x, b.y - y) <= b.r + 10);
+    const near = (b) => !b.gone && Math.hypot(b.x - x, b.y - y) <= b.r + 10;
+    const hit = bubbles.find((b) => b.n === next && near(b)) ?? [...bubbles].reverse().find(near);   // if the one you need is under your finger, it wins
     if (!hit) return;
     if (hit.n !== next) { hit.shake = 0.4; navigator.vibrate?.([5, 30, 5]); $('.b-note').textContent = `Look for ${next}.`; return; }
     hit.gone = true; burst(hit); navigator.vibrate?.(8); next++;
