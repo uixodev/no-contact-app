@@ -116,6 +116,8 @@ async function init() {
   if (action === 'checkin') { goTab('checkin'); $('#checkinForm input[name="status"]')?.focus(); }
   else if (action === 'help') goTab('help');
   else if (action === 'urgent') { goTab('help'); rescue.open(); }
+  window.__ncReady = true;                        // tells the loading-screen watchdog that startup worked
+  document.getElementById('fixit')?.remove();
   hideSplash();
 
   // Live clock: tick once a second, aligned to the wall-clock second so it never drifts.
@@ -944,6 +946,8 @@ function registerServiceWorker() {
   const hadController = !!navigator.serviceWorker.controller; // on a first visit the new worker just takes over: no reload, so nobody loses what they're typing
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (refreshing || !hadController) return;
+    const typing = ['TEXTAREA', 'INPUT'].includes(document.activeElement?.tagName) && document.activeElement.value;
+    if (document.querySelector('dialog[open]') || typing) return;   // don't pull the page away mid-sentence: the next open uses the new version
     refreshing = true;
     location.reload();
   });
