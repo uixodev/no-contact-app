@@ -31,6 +31,32 @@
   </script>
 </head>
 <body class="splashing">
+  <script>
+    // Watchdog: if the app has not started after a few seconds, or a script fails while starting, offer a one-tap fix
+    // (refreshes the app's files; your entries are not touched).
+    (function () {
+      function show() {
+        if (window.__ncReady || document.getElementById('fixit')) return;
+        var d = document.createElement('div');
+        d.id = 'fixit'; d.setAttribute('role', 'alert');
+        d.style.cssText = 'position:fixed;inset:0;z-index:99999;display:grid;place-content:center;gap:14px;padding:24px;text-align:center;background:#fff;color:#3c3c3c;font:700 17px/1.4 system-ui,sans-serif';
+        d.innerHTML = '<div style="font-size:44px">🔧</div><div style="font-size:20px;font-weight:900">The app needs a quick refresh</div>' +
+          '<div style="max-width:320px;margin:0 auto;font-weight:600">A new version arrived and the old files got in the way. Your entries and notes are safe.</div>' +
+          '<button id="fixitBtn" type="button" style="margin:6px auto 0;min-height:56px;padding:0 28px;border:0;border-bottom:4px solid #3d8f00;border-radius:16px;background:#58cc02;color:#fff;font:900 16px system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase">Refresh the app</button>';
+        document.body.appendChild(d);
+        document.getElementById('fixitBtn').onclick = function () {
+          this.textContent = 'Refreshing…';
+          var done = function () { location.reload(); };
+          Promise.all([
+            navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }) : 0,
+            window.caches ? caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }) : 0
+          ]).then(done, done);
+        };
+      }
+      setTimeout(show, 8000);
+      window.addEventListener('error', function () { setTimeout(show, 600); });
+    })();
+  </script>
   <!-- Loading screen: shown on launch while the app opens (app.js fades it out) -->
   <div id="splash" class="splash" role="status" aria-label="Loading No Contact Dude">
     <div class="splash-bg" aria-hidden="true">

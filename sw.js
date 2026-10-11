@@ -6,7 +6,7 @@
  *  - Everything else same-origin: cache-first, then network (and cache it).
  * Bump CACHE_VERSION whenever you change any precached file.
  */
-const CACHE_VERSION = 'v3.17.1';
+const CACHE_VERSION = 'v3.18.0';
 const SHELL_CACHE = `clear-days-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `clear-days-runtime-${CACHE_VERSION}`;
 
@@ -44,7 +44,9 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(SHELL_CACHE).then((cache) => cache.addAll(APP_SHELL))
   );
-  // Don't skipWaiting automatically — the page shows an "Update ready" prompt.
+  // Take over as soon as the new files are cached. Waiting left the new HTML running on the old cached scripts,
+  // which crashed the app after a deploy and hid the "update ready" prompt.
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -95,7 +97,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Same-origin static assets: cache-first.
+  // 3. Same-origin code (html, js, css, manifest): network-first, so a page and its scripts always come from the
+  //    same deploy. The cache is only the offline fallback.
+  if (url.origin === self.location.origin && /\.(js|css|html|webmanifest)$/.test(url.pathname) && !url.pathname.includes('/vendor/')) {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  // 4. Everything else on this origin (icons, bundled p5): cache-first.
   if (url.origin === self.location.origin) {
     event.respondWith((async () => {
       const cached = await caches.match(request, { ignoreSearch: true });
@@ -110,6 +119,23 @@ self.addEventListener('fetch', (event) => {
     })());
   }
 });
+
+/** Try the network for up to 5 seconds (fresh from the server), then fall back to what is cached. */
+async function networkFirst(request) {
+  const cache = await caches.open(SHELL_CACHE);
+  try {
+    const res = await Promise.race([
+      fetch(request, { cache: 'no-cache' }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('slow network')), 5000)),
+    ]);
+    if (res && res.ok) cache.put(request, res.clone());
+    return res;
+  } catch {
+    return (await cache.match(request, { ignoreSearch: true }))
+      || (await caches.match(request, { ignoreSearch: true }))
+      || new Response('', { status: 504, statusText: 'Offline' });
+  }
+}
 
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(RUNTIME_CACHE);
