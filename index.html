@@ -430,7 +430,9 @@
             <button type="button" class="tool" data-check="group"><span class="tool-ico" aria-hidden="true">👥</span><strong>The group</strong><small>Chat or community</small></button>
             <button type="button" class="tool tool-wide" data-check="gmail"><span class="tool-ico" aria-hidden="true">✉️</span><strong>My Gmail</strong><small>Looking for a message from him</small></button>
           </div>
+          <div class="check-pending" id="checkPending" hidden></div>
           <p class="muted small check-count" id="checkCount" hidden></p>
+          <button type="button" class="btn btn-ghost btn-block" id="notesBtn">📒 My notes</button>
         </section>
 
         <section class="card game-card" aria-labelledby="gameCardTitle">
@@ -494,10 +496,15 @@
 
   <!-- Urgent help: a guided, step-by-step rescue for the peak of an urge. Steps are rendered by app.js. -->
         <dialog id="checkDialog" class="check" aria-labelledby="checkTitle"><div class="check-inner">
-    <header class="check-top"><h2 id="checkTitle" tabindex="-1">Before you look</h2>
-      <button class="game-nav" type="button" id="checkClose" aria-label="Close"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></header>
+    <header class="check-top">
+      <button class="game-nav" type="button" id="checkBack" aria-label="Back" hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="step-dots" id="checkDots" role="presentation"></div>
+      <h2 id="checkTitle" class="sr-only" tabindex="-1">Before you look</h2>
+      <button class="game-nav" type="button" id="checkClose" aria-label="Close"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
+    </header>
     <div class="check-body">
-      <section id="checkTruth" class="check-stage">
+      <section id="cs-truth" class="check-stage">
+        <h3 class="check-big">Before you look</h3>
         <div class="disclaimer" role="note">
           <strong>🛑 Looking at <span id="checkWhat">his account</span> will not change anything.</strong>
           <ul>
@@ -514,13 +521,32 @@
           <label class="field"><span class="field-label">One per line</span><textarea id="hurtText" rows="4" maxlength="1600" placeholder="His words, one per line"></textarea></label>
           <button type="button" class="btn btn-primary btn-sm" id="hurtSave">Save</button>
         </div>
-        <h3 class="check-h">Why is he still in your head?</h3>
-        <div class="picks" id="reasonChips"></div>
-        <p class="reason-reply" id="reasonReply" aria-live="polite"></p>
-        <label class="field"><span class="field-label">Say it in your own words <span class="optional">optional, not saved</span></span><textarea id="reasonText" class="autosize" rows="2" maxlength="500" placeholder="Just for you"></textarea></label>
-        <button type="button" class="btn btn-primary btn-lg btn-block" id="checkGo">Let him go</button>
       </section>
-      <section id="checkSwipe" class="check-stage" hidden>
+      <section id="cs-why" class="check-stage" hidden>
+        <h3 class="check-big">Why do you want to reach out right now?</h3>
+        <p class="muted">Write it down, honestly. Even one line. It is saved in your notes so you can read it later.</p>
+        <label class="field"><span class="sr-only">Why do you want to reach out right now</span><textarea id="whyText" rows="5" maxlength="1000" placeholder="Right now I want to check because…"></textarea></label>
+        <div class="picks" id="whyStarters" aria-label="Ways to begin"></div>
+      </section>
+      <section id="cs-faith" class="check-stage" hidden>
+        <div class="faith">
+          <i class="ray r1"></i><i class="ray r2"></i><i class="ray r3"></i>
+          <div class="breath-orb" aria-hidden="true"></div>
+          <p class="faith-text" id="thoughtText"></p>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" id="thoughtEditBtn">✏️ Change this thought</button>
+        <div id="thoughtEdit" hidden>
+          <label class="field"><span class="field-label">Your thought</span><textarea id="thoughtInput" rows="4" maxlength="400"></textarea></label>
+          <button type="button" class="btn btn-primary btn-sm" id="thoughtSave">Save</button>
+        </div>
+      </section>
+      <section id="cs-ask" class="check-stage" hidden>
+        <h3 class="check-big" id="askTitle">Do you still want to check?</h3>
+        <div id="echoList" class="echo-list"></div>
+        <button type="button" class="btn btn-primary btn-lg btn-block" id="askNo">No. I do not want to</button>
+        <button type="button" class="btn btn-ghost btn-lg btn-block" id="askYes">Yes, I still do</button>
+      </section>
+      <section id="cs-swipe" class="check-stage" hidden>
         <div class="flick-pips" id="flickPips" aria-hidden="true"></div>
         <div class="mind" id="mindStage">
           <i class="thought t1"></i><i class="thought t2"></i><i class="thought t3"></i>
@@ -533,14 +559,53 @@
         <p class="balloon-note" id="flickNote" aria-live="polite"></p>
         <button type="button" class="btn btn-ghost btn-sm" id="pushBtn">Push him away</button>
       </section>
-      <section id="checkCalm" class="check-stage" hidden>
+      <section id="cs-calm" class="check-stage" hidden>
         <div class="calm-card"><p class="calm-ico" aria-hidden="true">🌿</p><h3>He is not here.</h3>
           <p>That space in your mind is yours again. Notice how quiet it is. Take one slow breath in, and let it out.</p>
-          <p class="muted" id="calmCount"></p></div>
+          <p class="win-badge" id="calmCount"></p></div>
         <button type="button" class="btn btn-primary btn-lg btn-block" id="calmDone">I am okay</button>
         <button type="button" class="btn btn-ghost btn-lg btn-block" id="calmGame">🎮 Play something calm</button>
       </section>
+      <section id="cs-wait" class="check-stage" hidden>
+        <h3 class="check-big">Wait twenty minutes</h3>
+        <p class="muted">Urges peak and pass. Do something else, then come back and answer again.</p>
+        <div class="wait-ring">
+          <svg viewBox="0 0 160 160" aria-hidden="true"><circle class="w-track" cx="80" cy="80" r="70"/><circle class="w-fill" id="waitRing" cx="80" cy="80" r="70"/></svg>
+          <div class="wait-mid"><b id="waitClock">20:00</b><span>until you ask yourself again</span></div>
+          <div class="breath-orb small" aria-hidden="true"></div>
+        </div>
+        <button type="button" class="btn btn-primary btn-lg btn-block" id="waitGame">🎮 Play something calm</button>
+        <button type="button" class="btn btn-ghost btn-lg btn-block" id="waitLater">Close. I will come back</button>
+      </section>
+      <section id="cs-report" class="check-stage" hidden>
+        <h3 class="check-big">Write a short report</h3>
+        <p class="muted">It is your choice, and you will not be judged. Looking is information. Write it down so next time you can read it.</p>
+        <label class="field"><span class="field-label">Why did I need to check, and what was the real reason?</span><textarea id="repReason" rows="3" maxlength="1000"></textarea></label>
+        <label class="field"><span class="field-label">How did I feel afterwards?</span><textarea id="repFelt" rows="3" maxlength="1000" placeholder="Write it after you look. Be honest."></textarea></label>
+        <button type="button" class="btn btn-primary btn-lg btn-block" id="repSave">Save my report</button>
+        <button type="button" class="btn btn-ghost btn-lg btn-block" id="repLater">I will write how I felt after I look</button>
+      </section>
+      <section id="cs-done" class="check-stage" hidden>
+        <div class="calm-card"><p class="calm-ico" aria-hidden="true">📒</p><h3>Saved.</h3>
+          <p>Thank you for being honest. Your note is saved and you can edit it any time. Next time you ask yourself this question, you will see what you wrote.</p></div>
+        <button type="button" class="btn btn-primary btn-lg btn-block" id="doneClose">Done</button>
+        <button type="button" class="btn btn-ghost btn-lg btn-block" id="doneNotes">📒 See my notes</button>
+      </section>
+      <section id="cs-notes" class="check-stage" hidden>
+        <h3 class="check-big">My notes</h3>
+        <p class="muted small" id="notesEmpty">Nothing here yet. When you pause before checking on him, what you write is saved here.</p>
+        <ul class="notes-list" id="notesList"></ul>
+      </section>
+      <section id="cs-edit" class="check-stage" hidden>
+        <h3 class="check-big">Edit note</h3>
+        <label class="field"><span class="field-label">Why I wanted to reach out</span><textarea id="editWhy" rows="3" maxlength="1000"></textarea></label>
+        <label class="field"><span class="field-label">The real reason</span><textarea id="editReason" rows="3" maxlength="1000"></textarea></label>
+        <label class="field"><span class="field-label">How I felt afterwards</span><textarea id="editFelt" rows="3" maxlength="1000"></textarea></label>
+        <label class="field"><span class="field-label">How did it end?</span><select id="editOutcome"><option value="resisted">I did not look</option><option value="waited">I waited, then did not look</option><option value="checked">I looked</option></select></label>
+        <button type="button" class="btn btn-primary btn-lg btn-block" id="editSave">Save changes</button>
+      </section>
     </div>
+    <footer class="check-foot" id="checkFoot"><button type="button" class="btn btn-primary btn-lg btn-block" id="checkNext">Continue</button></footer>
   </div></dialog>
   <dialog id="gameDialog" class="game" aria-labelledby="gameTitle"><div class="game-inner">
     <header class="game-top">
