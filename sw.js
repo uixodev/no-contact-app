@@ -6,7 +6,7 @@
  *  - Everything else same-origin: cache-first, then network (and cache it).
  * Bump CACHE_VERSION whenever you change any precached file.
  */
-const CACHE_VERSION = 'v3.20.0';
+const CACHE_VERSION = 'v3.21.0';
 const SHELL_CACHE = `clear-days-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `clear-days-runtime-${CACHE_VERSION}`;
 
@@ -29,6 +29,7 @@ const APP_SHELL = [
   './js/games/echo.js',
   './js/games/sort.js',
   './js/games/bubbles.js',
+  './js/games/swipe.js',
   './js/mosaic.js',
   './js/vendor/p5.min.js',
   './js/app.js',

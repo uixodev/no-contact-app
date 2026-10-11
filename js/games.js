@@ -3,6 +3,7 @@ import { getBest, setBest, reduced } from './games/store.js';
 import { createEcho } from './games/echo.js';
 import { createSort } from './games/sort.js';
 import { createBubbles } from './games/bubbles.js';
+import { createSwipe } from './games/swipe.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 
@@ -43,9 +44,9 @@ const LEVELS = [[3, 4], [4, 4], [4, 5], [5, 6]]; // columns × rows, always an e
 
 export function createGames() {
   const dlg = $('#gameDialog');
-  const views = { menu: $('#gameMenu'), memory: $('#gameMemory'), merge: $('#gameMerge'), echo: $('#gameEcho'), sort: $('#gameSort'), bubbles: $('#gameBubbles') };
-  const TITLES = { menu: 'Distract me', memory: 'Memory match', merge: 'Merge', echo: 'Echo', sort: 'Sort', bubbles: 'Count & pop' };
-  const extra = { echo: createEcho(views.echo), sort: createSort(views.sort), bubbles: createBubbles(views.bubbles) };
+  const views = { menu: $('#gameMenu'), memory: $('#gameMemory'), merge: $('#gameMerge'), echo: $('#gameEcho'), sort: $('#gameSort'), bubbles: $('#gameBubbles'), swipe: $('#gameSwipe') };
+  const TITLES = { menu: 'Distract me', memory: 'Memory match', merge: 'Merge', echo: 'Echo', sort: 'Sort', bubbles: 'Count & pop', swipe: 'Swipe away' };
+  const extra = { echo: createEcho(views.echo), sort: createSort(views.sort), bubbles: createBubbles(views.bubbles), swipe: createSwipe(views.swipe) };
   let opener = null;
   let current = 'menu';
 
@@ -56,6 +57,7 @@ export function createGames() {
       memory: memBest ? `Best: ${memBest} moves (level 1)` : '', merge: getBest('merge') ? `Best: ${getBest('merge').toLocaleString('en-GB')}` : '',
       bubbles: getBest('bubbles', 1) > 1 ? `Reached wave ${getBest('bubbles', 1)}` : '', sort: getBest('sortLevel', 1) > 1 ? `Reached level ${getBest('sortLevel', 1)}` : '',
       echo: getBest('echo') ? `Best: ${getBest('echo')} in a row` : '',
+      swipe: getBest('swipeScore', 0) ? `Best: ${getBest('swipeScore', 0).toLocaleString('en-GB')} · wave ${getBest('swipeWave', 1)}` : '',
     };
     dlg.querySelectorAll('[data-best]').forEach((el) => { el.textContent = lines[el.dataset.best] || ''; el.hidden = !lines[el.dataset.best]; });
   }

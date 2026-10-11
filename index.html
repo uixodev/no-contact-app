@@ -466,11 +466,12 @@
           <h2 id="gameCardTitle">Distract me</h2>
           <p class="muted small">Give your hands and mind something else to do for a few minutes. The urge will pass.</p>
           <div class="tools">
+            <button type="button" class="tool" data-game="swipe"><span class="tool-ico" aria-hidden="true">👋</span><strong>Swipe away</strong><small>Clear your mind</small></button>
             <button type="button" class="tool" data-game="bubbles"><span class="tool-ico" aria-hidden="true">🫧</span><strong>Count &amp; pop</strong><small>Drifting bubbles</small></button>
             <button type="button" class="tool" data-game="sort"><span class="tool-ico" aria-hidden="true">🧪</span><strong>Sort</strong><small>Pour the colours</small></button>
             <button type="button" class="tool" data-game="echo"><span class="tool-ico" aria-hidden="true">🔔</span><strong>Echo</strong><small>Repeat the pattern</small></button>
             <button type="button" class="tool" data-game="memory" id="playMemory"><span class="tool-ico" aria-hidden="true">🃏</span><strong>Memory match</strong><span class="pick-best" data-best="memory"></span><small>Find the pairs</small></button>
-            <button type="button" class="tool tool-wide" data-game="merge" id="playMerge"><span class="tool-ico" aria-hidden="true">🔢</span><strong>Merge</strong><small>Swipe and combine numbers</small></button>
+            <button type="button" class="tool" data-game="merge" id="playMerge"><span class="tool-ico" aria-hidden="true">🔢</span><strong>Merge</strong><small>Swipe and combine numbers</small></button>
           </div>
         </section>
 
@@ -582,7 +583,18 @@
             <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="38" r="17"/><path d="M16 92c2-24 17-34 34-34s32 10 34 34Z"/></svg>
             <span class="him-badge" aria-hidden="true">👤</span>
           </button>
-          <p class="mind-empty" aria-hidden="true">✨</p>
+          <div class="mind-empty" aria-hidden="true"><svg class="bloom" viewBox="0 0 200 200" aria-hidden="true">
+            <defs>
+              <radialGradient id="bloomGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff6d8" stop-opacity=".95"/><stop offset=".5" stop-color="#ffd98a" stop-opacity=".45"/><stop offset="1" stop-color="#ffd98a" stop-opacity="0"/></radialGradient>
+              <linearGradient id="bloomPetal" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff9ec7"/><stop offset=".55" stop-color="#ffc9a8"/><stop offset="1" stop-color="#fff0c4"/></linearGradient>
+              <linearGradient id="bloomPetal2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#c8a2ff"/><stop offset="1" stop-color="#ffe3f0"/></linearGradient>
+            </defs>
+            <circle class="b-glow" cx="100" cy="100" r="96" fill="url(#bloomGlow)"/>
+            <g class="b-ring"><circle cx="100" cy="100" r="82" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.5" stroke-dasharray="2 7" stroke-linecap="round"/></g>
+            <g class="b-petals back"><path d="M100 100C80 74 82 36 100 16c18 20 20 58 0 84Z" transform="rotate(22.5 100 100)" fill="url(#bloomPetal2)" fill-opacity=".8"/><path d="M100 100C80 74 82 36 100 16c18 20 20 58 0 84Z" transform="rotate(67.5 100 100)" fill="url(#bloomPetal2)" fill-opacity=".8"/><path d="M100 100C80 74 82 36 100 16c18 20 20 58 0 84Z" transform="rotate(112.5 100 100)" fill="url(#bloomPetal2)" fill-opacity=".8"/><path d="M100 100C80 74 82 36 100 16c18 20 20 58 0 84Z" transform="rotate(157.5 100 100)" fill="url(#bloomPetal2)" fill-opacity=".8"/><path d="M100 100C80 74 82 36 100 16c18 20 20 58 0 84Z" transform="rotate(202.5 100 100)" fill="url(#bloomPetal2)" fill-opacity=".8"/><path d="M100 100C80 74 82 36 100 16c18 20 20 58 0 84Z" transform="rotate(247.5 100 100)" fill="url(#bloomPetal2)" fill-opacity=".8"/><path d="M100 100C80 74 82 36 100 16c18 20 20 58 0 84Z" transform="rotate(292.5 100 100)" fill="url(#bloomPetal2)" fill-opacity=".8"/><path d="M100 100C80 74 82 36 100 16c18 20 20 58 0 84Z" transform="rotate(337.5 100 100)" fill="url(#bloomPetal2)" fill-opacity=".8"/></g>
+            <g class="b-petals front"><path d="M100 100C78 70 82 32 100 8c18 24 22 62 0 92Z" transform="rotate(0 100 100)" fill="url(#bloomPetal)" fill-opacity=".95"/><path d="M100 100C78 70 82 32 100 8c18 24 22 62 0 92Z" transform="rotate(45 100 100)" fill="url(#bloomPetal)" fill-opacity=".95"/><path d="M100 100C78 70 82 32 100 8c18 24 22 62 0 92Z" transform="rotate(90 100 100)" fill="url(#bloomPetal)" fill-opacity=".95"/><path d="M100 100C78 70 82 32 100 8c18 24 22 62 0 92Z" transform="rotate(135 100 100)" fill="url(#bloomPetal)" fill-opacity=".95"/><path d="M100 100C78 70 82 32 100 8c18 24 22 62 0 92Z" transform="rotate(180 100 100)" fill="url(#bloomPetal)" fill-opacity=".95"/><path d="M100 100C78 70 82 32 100 8c18 24 22 62 0 92Z" transform="rotate(225 100 100)" fill="url(#bloomPetal)" fill-opacity=".95"/><path d="M100 100C78 70 82 32 100 8c18 24 22 62 0 92Z" transform="rotate(270 100 100)" fill="url(#bloomPetal)" fill-opacity=".95"/><path d="M100 100C78 70 82 32 100 8c18 24 22 62 0 92Z" transform="rotate(315 100 100)" fill="url(#bloomPetal)" fill-opacity=".95"/></g>
+            <circle cx="100" cy="100" r="15" fill="#fff6d8"/><circle cx="100" cy="100" r="8" fill="#ffd25a"/>
+          </svg></div>
         </div>
         <p class="balloon-note" id="flickNote" aria-live="polite"></p>
         <button type="button" class="btn btn-ghost btn-sm" id="pushBtn">Push him away</button>
@@ -645,6 +657,7 @@
       <p class="muted">Pick one. All of them are calm, and none can be lost for good.</p>
       <button type="button" class="game-pick" id="gamePickMemory"><span aria-hidden="true">🃏</span><strong>Memory match</strong><small>Flip cards and find the pairs. Four levels, no timer.</small></button>
       <button type="button" class="game-pick" id="gamePickMerge"><span aria-hidden="true">🔢</span><strong>Merge</strong><span class="pick-best" data-best="merge"></span><small>Swipe the tiles and combine equal numbers. Chase your best score.</small></button>
+      <button type="button" class="game-pick" data-pick="swipe"><span aria-hidden="true">👋</span><strong>Swipe away</strong><span class="pick-best" data-best="swipe"></span><small>Figures drift into your mind. Swipe across them to knock them away before they arrive. Breathe, clear all, build combos.</small></button>
       <button type="button" class="game-pick" data-pick="bubbles"><span aria-hidden="true">🫧</span><strong>Count &amp; pop</strong><span class="pick-best" data-best="bubbles"></span><small>Slow-drifting bubbles. Pop them in order, 1, 2, 3… Soft focus, soft colours.</small></button>
       <button type="button" class="game-pick" data-pick="sort"><span aria-hidden="true">🧪</span><strong>Sort</strong><span class="pick-best" data-best="sort"></span><small>Pour the colours until each tube holds one. No timer, undo any time.</small></button>
       <button type="button" class="game-pick" data-pick="echo"><span aria-hidden="true">🔔</span><strong>Echo</strong><span class="pick-best" data-best="echo"></span><small>Watch glowing orbs sing a pattern, then play it back. It asks for your full attention.</small></button>
@@ -670,6 +683,7 @@
     <section id="gameEcho" class="game-view" hidden></section>
     <section id="gameSort" class="game-view" hidden></section>
     <section id="gameBubbles" class="game-view" hidden></section>
+    <section id="gameSwipe" class="game-view" hidden></section>
   </div></dialog>
   <dialog id="daysDialog" class="days" aria-labelledby="daysTitle"><div class="days-inner">
     <header class="days-top"><h2 id="daysTitle" tabindex="-1">Your days</h2>
