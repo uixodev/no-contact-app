@@ -42,7 +42,7 @@ const APP_SHELL = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(SHELL_CACHE).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(SHELL_CACHE).then((cache) => cache.addAll(APP_SHELL.map((u) => new Request(u, { cache: 'reload' }))))   // 'reload': never precache a stale copy from the browser's HTTP cache
   );
   // Take over as soon as the new files are cached. Waiting left the new HTML running on the old cached scripts,
   // which crashed the app after a deploy and hid the "update ready" prompt.
