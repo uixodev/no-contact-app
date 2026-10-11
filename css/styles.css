@@ -1125,8 +1125,32 @@ dialog.check[open] { display: flex; }
 .spark { position: absolute; width: 10px; height: 10px; background: #fff; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: sparkle 1.6s ease-in-out infinite; pointer-events: none; opacity: 0; }
 @keyframes sparkle { 0%, 100% { opacity: 0; transform: scale(.2) rotate(0); } 50% { opacity: 1; transform: scale(1.6) rotate(90deg); } }
 .mind.dawn { background: radial-gradient(circle at 50% 55%, #fff3c4, transparent 65%), linear-gradient(180deg, #bfe3ff, #ffe9c4); }
-.mind-empty { font-size: 5rem; filter: drop-shadow(0 0 20px rgb(255 235 170 / .9)); }
-.mind.empty .mind-empty { animation: emptypulse 3s ease-in-out infinite 1s; }
-@keyframes emptypulse { 50% { transform: scale(1.12); } }
 @media (prefers-reduced-motion: reduce) { .check-stage, .ray, .breath-orb, .shock, .ghost, .lmote, .spark, .mind.empty .mind-empty { animation: none; } .step-dots i, .thought, .w-fill { transition: none; } }
 #checkClose { margin-left: auto; }
+
+/* the bloom that opens when he is gone (replaces the star emoji) */
+.mind-empty .bloom { width: min(70%, 240px); height: auto; filter: drop-shadow(0 0 22px rgb(255 214 140 / .8)); }
+.b-petals { transform-origin: 100px 100px; transform: scale(.15) rotate(-60deg); opacity: 0; transition: transform 1.6s cubic-bezier(.2,1.2,.3,1), opacity 1s; }
+.b-petals.back { transition-delay: .25s; }
+.mind.empty .b-petals { transform: scale(1) rotate(0deg); opacity: 1; }
+.mind.empty .b-petals.front { animation: bloomturn 40s linear 1.8s infinite; }
+.mind.empty .b-petals.back { animation: bloomturn 56s linear 1.8s infinite reverse; }
+.b-glow { transform-origin: 100px 100px; animation: bloomglow 4s ease-in-out infinite; }
+.b-ring { transform-origin: 100px 100px; animation: bloomturn 60s linear infinite; }
+@keyframes bloomturn { to { transform: rotate(360deg); } }
+@keyframes bloomglow { 50% { transform: scale(1.12); opacity: .8; } }
+@media (prefers-reduced-motion: reduce) { .b-petals { transition: none; } .mind.empty .b-petals, .b-glow, .b-ring { animation: none; } }
+
+/* Swipe away (game) */
+.clarity { height: 12px; border-radius: 99px; background: var(--color-border); overflow: hidden; flex: none; }
+.clarity i { display: block; height: 100%; width: 60%; border-radius: 99px; background: linear-gradient(90deg, #8d7bff, #ffd25a); transition: width .4s; }
+.swp-stage { position: relative; flex: 1 1 300px; min-height: 280px; border-radius: var(--radius-md); overflow: hidden; background: linear-gradient(170deg, #1b1740, #2b2358 55%, #3b2f6a); touch-action: none; }
+.swp-canvas { position: absolute; inset: 0; touch-action: none; cursor: crosshair; }
+.swp-combo { position: absolute; top: 10px; left: 0; right: 0; margin: 0; text-align: center; font-weight: 900; color: #fff; text-shadow: 0 2px 10px rgb(0 0 0 / .5); pointer-events: none; font-size: 1.2rem; min-height: 1.5em; }
+.swp-combo.pop { animation: combopop .5s ease-out; }
+@keyframes combopop { from { transform: scale(.6); opacity: 0; } }
+.swp-powers { display: flex; gap: var(--space-3); flex-wrap: wrap; justify-content: center; }
+.swp-powers .btn { flex: 1 1 110px; max-width: 200px; }
+.swp-powers b { margin-left: 6px; padding: 0 8px; border-radius: 99px; background: var(--green-soft); color: var(--green-ink); }
+.swp-powers .btn:disabled { opacity: .5; }
+@media (prefers-reduced-motion: reduce) { .swp-combo.pop, .clarity i { animation: none; transition: none; } }
