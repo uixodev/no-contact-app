@@ -118,6 +118,10 @@ button, a, label, [role='button'] { touch-action: manipulation; }
   *::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
   /* while a pop-up is open the page behind must not scroll (its scroll line used to peek out at the edge) */
   html:has(dialog[open]), body:has(dialog[open]) { overflow: hidden; }
+  /* The page scrolls inside this box, not in the window. Samsung Internet draws its own scroll line for the window
+     that CSS cannot hide; for a box, the bar is drawn at the box's right edge, which is pushed 32px off screen. */
+  html, body { height: 100%; overflow: hidden; }
+  .scroller { position: fixed; top: 0; left: 0; bottom: 0; width: calc(100% + 32px); padding-right: 32px; box-sizing: border-box; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
 }
 
 .muted { color: var(--color-muted); font-weight: 600; }
