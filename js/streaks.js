@@ -117,6 +117,26 @@ export function computeStats(checkins, startDate, today = toKey(), { startTime =
 }
 
 /** Build a grid of the last `weeks` weeks (Mon-first) for a heatmap. */
+/**
+ * "Days in a row you opened the app": the run of consecutive local days that end today (or yesterday, when today has
+ * not been recorded yet) in which the app was opened. Missing a day breaks it. Check-ins and what they say play no part.
+ */
+export function openStreak(openDays, today = toKey()) {
+  const days = new Set(Array.isArray(openDays) ? openDays : []);
+  let cursor = days.has(today) ? today : addDays(today, -1);
+  let n = 0;
+  while (days.has(cursor)) { n++; cursor = addDays(cursor, -1); }
+  return n;
+}
+
+/** The longest run of consecutive days the app was opened. */
+export function longestOpenStreak(openDays) {
+  const days = [...new Set(Array.isArray(openDays) ? openDays : [])].sort();
+  let best = 0, run = 0, prev = null;
+  for (const d of days) { run = prev && diffDays(prev, d) === 1 ? run + 1 : 1; best = Math.max(best, run); prev = d; }
+  return best;
+}
+
 export function buildCalendar(checkins, startDate, today = toKey(), weeks = 15) {
   const byDate = new Map(checkins.map((c) => [c.date, c]));
   const t = fromKey(today);
