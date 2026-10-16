@@ -1,6 +1,6 @@
 import * as db from './db.js';
 import { createRescue } from './rescue.js';
-import { computeStats, buildCalendar, urgeStats, weekStrip, dailyGoal, insights, WEEKDAYS, splitElapsed, formatElapsed, toTimestamp, toKey, fromKey, MILESTONES } from './streaks.js';
+import { computeStats, buildCalendar, urgeStats, weekStrip, dailyGoal, insights, WEEKDAYS, splitElapsed, formatElapsed, openStreak, longestOpenStreak, toTimestamp, toKey, fromKey, MILESTONES } from './streaks.js';
 import { TAGS, WINS, SLEEP, ENERGY, PROMPTS, labelOf } from './tags.js';
 import { lineChart } from './charts.js';
 import { confetti } from './fx.js';
@@ -104,6 +104,7 @@ async function init() {
   showTab(tabFromHash(), { scroll: false });
   await db.openDB();
   await load();
+  await recordOpen();
   $('#loading').hidden = true;
   render();
   registerServiceWorker();
@@ -124,13 +125,27 @@ async function init() {
   // Also re-renders when the date changes, and catches up when the app returns to the foreground.
   let lastDay = toKey();
   const tick = () => {
-    if (toKey() !== lastDay) { lastDay = toKey(); render(); }
+    if (toKey() !== lastDay) { lastDay = toKey(); recordOpen().then(render); }
     updateClock();
     rescue.tick();
   };
   const loop = () => { tick(); setTimeout(loop, 1000 - (Date.now() % 1000) + 5); };
   loop();
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { syncOrbit(); tick(); } });
+}
+
+/**
+ * Remember that the app was opened today. This is what the streak counts: only opening the app, never what you wrote
+ * in a check-in. The first time, days that already have a check-in count as opened so nobody starts from zero.
+ */
+async function recordOpen() {
+  const today = toKey();
+  const have = state.settings.openDays;
+  if (Array.isArray(have) && have.includes(today)) return;
+  const base = Array.isArray(have) ? have : [...new Set(state.checkins.map((c) => c.date))].filter((d) => d <= today);
+  const next = [...new Set([...base, today])].sort();
+  await db.setSetting('openDays', next);
+  state.settings.openDays = next;
 }
 
 async function load() {
@@ -194,9 +209,10 @@ function render() {
   }
 
   // Stats
-  $('#streakChipNum').textContent = s.checkinStreak;
+  const inApp = openStreak(state.settings.openDays, today);
+  $('#streakChipNum').textContent = inApp;
   $('#statLongest').textContent = s.longestRun;
-  $('#statStreak').textContent = s.checkinStreak;
+  $('#statStreak').textContent = inApp;
   $('#statTotal').textContent = s.totalCheckins;
   $('#statTotalSub').textContent = `${s.heldCount} held · ${s.contactCount} contact`;
   $('#statMood').textContent = s.avgMood7 == null ? '—' : s.avgMood7.toFixed(1);
@@ -266,7 +282,8 @@ function renderWeek(today, s) {
     b.addEventListener('click', () => startEdit(d.date));
     return b;
   }));
-  $('#weekStreak').textContent = `🔥 ${s.checkinStreak}-day streak`;
+  const inApp = openStreak(state.settings.openDays, today), bestInApp = longestOpenStreak(state.settings.openDays);
+  $('#weekStreak').textContent = `🔥 ${inApp} ${inApp === 1 ? 'day' : 'days'} in the app${bestInApp > inApp ? ` · best ${bestInApp}` : ''}`;
 }
 
 /** Today's daily goal: check in, 3 wins, one good thing. */
