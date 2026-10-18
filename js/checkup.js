@@ -11,6 +11,7 @@
  * Every pass is saved as a note you can read and edit later (setting "checkLog", part of your backup).
  */
 import { confetti } from './fx.js';
+import { TAGS, labelOf } from './tags.js';
 
 const KINDS = {
   account: { icon: '👤', label: 'His account', what: 'his account', line: 'His page will not answer anything. It shows a curated moment, and you will carry it around for the rest of the day.' },
@@ -28,9 +29,9 @@ const fmtDay = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeri
 const fmtTime = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' });
 const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
 
-export function createCheckup({ get, set, onGames }) {
+export function createCheckup({ get, set, onGames, urges }) {
   const dlg = $('#checkDialog');
-  const SLIDES = ['truth', 'why', 'faith', 'ask', 'swipe', 'calm', 'wait', 'report', 'done', 'notes', 'edit'];
+  const SLIDES = ['truth', 'why', 'faith', 'ask', 'swipe', 'calm', 'wait', 'report', 'done', 'notes', 'edit', 'urges', 'uedit'];
   const slides = Object.fromEntries(SLIDES.map((s) => [s, $(`#cs-${s}`)]));
   const FLOW = ['truth', 'why', 'faith', 'ask'];                         // the slides with Back and progress dots
   const stage = $('#mindStage'), token = $('#himToken');
@@ -55,6 +56,8 @@ export function createCheckup({ get, set, onGames }) {
     $('#checkCount').textContent = n ? `🛡️ You chose not to look ${n} ${n === 1 ? 'time' : 'times'}.` : '';
     const total = log().length;
     $('#notesBtn').textContent = `📒 My notes${total ? ` (${total})` : ''}`;
+    const nu = urges?.all().length || 0;
+    $('#urgeNotesBtn').textContent = `📒 My urge notes${nu ? ` (${nu})` : ''}`;
     const open = log().filter((e) => e.outcome === 'open' && e.waitUntil).sort((a, b) => b.waitUntil - a.waitUntil)[0];
     const needReport = log().filter((e) => e.outcome === 'checked' && !e.felt).length;
     const box = $('#checkPending');
@@ -86,12 +89,12 @@ export function createCheckup({ get, set, onGames }) {
     const inFlow = FLOW.includes(name);
     $('#checkDots').hidden = !inFlow;
     [...$('#checkDots').children].forEach((d, i) => d.classList.toggle('on', i <= FLOW.indexOf(name)));
-    $('#checkBack').hidden = !(inFlow && name !== 'truth') && name !== 'edit';
+    $('#checkBack').hidden = !(inFlow && name !== 'truth') && name !== 'edit' && name !== 'uedit';
     $('#checkFoot').hidden = !['truth', 'why', 'faith'].includes(name);
     $('#checkNext').textContent = name === 'faith' ? 'Continue' : 'Continue';
     $('#checkNext').disabled = false;
     dlg.querySelector('.check-body').scrollTop = 0;
-    $('#checkTitle').textContent = { truth: 'Before you look', why: 'Why now?', faith: 'A thought to hold', ask: 'One question', swipe: 'Let him go', calm: 'Quiet', wait: 'Wait', report: 'Your report', done: 'Saved', notes: 'My notes', edit: 'Edit note' }[name];
+    $('#checkTitle').textContent = { truth: 'Before you look', why: 'Why now?', faith: 'A thought to hold', ask: 'One question', swipe: 'Let him go', calm: 'Quiet', wait: 'Wait', report: 'Your report', done: 'Saved', notes: 'My notes', edit: 'Edit note', urges: 'My urge notes', uedit: 'Edit urge note' }[name];
     clearInterval(faithTimer);
     if (name === 'why') validateWhy();
     if (name === 'faith') startFaith();
@@ -357,6 +360,46 @@ export function createCheckup({ get, set, onGames }) {
   });
   $('#notesBtn').addEventListener('click', () => { opener = document.activeElement; openNotes(); });
 
+  // ---------- urge notes (from the urgent-help steps) ----------
+  function openUrges() {
+    const arr = (urges?.all() || []).slice().sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    $('#urgesEmpty').hidden = arr.length > 0;
+    $('#urgesList').replaceChildren(...arr.map((u) => {
+      const li = document.createElement('li'); li.className = 'note';
+      const d = new Date(u.at);
+      li.innerHTML = `<header><strong>🛡️ ${fmtDay.format(d)}, ${fmtTime.format(d)}</strong><span class="note-chip"></span></header>`;
+      li.querySelector('.note-chip').textContent = `Urge ${u.before} → ${u.after}`;
+      const faces = ['', '😞', '😕', '😐', '🙂', '😄'];
+      const add = (label, text) => { if (!text) return; const p = document.createElement('p'); const b = document.createElement('b'); b.textContent = label; const s = document.createElement('span'); s.textContent = text; p.append(b, s); li.append(p); };
+      if (u.moodBefore || u.moodAfter) add('Mood', `${faces[u.moodBefore] || '·'} → ${faces[u.moodAfter] || '·'}`);
+      const pulls = (u.tags || []).map((t) => (t === 'other' && u.tagOther ? `✨ ${u.tagOther}` : labelOf(TAGS, t)));
+      add('Pulling at me', pulls.join(', '));
+      add('Activity', u.activity); add('What I did', u.did);
+      if (u.waitedMin) add('Waited', `${u.waitedMin} minutes`);
+      const row = document.createElement('div'); row.className = 'note-actions';
+      const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'btn btn-ghost btn-sm'; edit.textContent = 'Edit'; edit.addEventListener('click', () => openUrgeEdit(u.at));
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'btn btn-ghost btn-sm'; del.textContent = 'Delete';
+      del.addEventListener('click', async () => { if (!confirm('Delete this urge note?')) return; await urges.remove(u.at); refresh(); openUrges(); });
+      row.append(edit, del); li.append(row);
+      return li;
+    }));
+    show('urges');
+    if (!dlg.open) dlg.showModal();
+  }
+  let editingUrge = null;
+  function openUrgeEdit(at) {
+    editingUrge = (urges?.all() || []).find((u) => u.at === at);
+    if (!editingUrge) return;
+    $('#ueOther').value = editingUrge.tagOther || ''; $('#ueDid').value = editingUrge.did || '';
+    $('#ueOtherField').hidden = !(editingUrge.tags || []).includes('other');
+    show('uedit');
+  }
+  $('#ueSave').addEventListener('click', async () => {
+    await urges.save({ ...editingUrge, tagOther: $('#ueOther').value.trim(), did: $('#ueDid').value.trim() });
+    refresh(); openUrges();
+  });
+  $('#urgeNotesBtn').addEventListener('click', () => { opener = document.activeElement; openUrges(); });
+
   // ---------- shell ----------
   $('#checkNext').addEventListener('click', async () => {
     if (current === 'truth') show('why');
@@ -368,6 +411,7 @@ export function createCheckup({ get, set, onGames }) {
   });
   $('#checkBack').addEventListener('click', () => {
     if (current === 'edit') { openNotes(); return; }
+    if (current === 'uedit') { openUrges(); return; }
     const i = FLOW.indexOf(current);
     if (i > 0) show(FLOW[i - 1]);
   });
@@ -398,5 +442,5 @@ export function createCheckup({ get, set, onGames }) {
   }
   // legacy cleanup: the dots under the header
   $('#checkDots').replaceChildren(...FLOW.map(() => document.createElement('i')));
-  return { open, refresh, openNotes };
+  return { open, refresh, openNotes, openUrges };
 }
