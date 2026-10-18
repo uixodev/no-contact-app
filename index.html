@@ -251,15 +251,6 @@
           <div class="week" id="weekStrip" role="group" aria-label="Your last 7 days. Tap a day to open it."></div>
         </section>
 
-        <section class="card goal-card" aria-labelledby="goalTitle">
-          <div class="card-head">
-            <h2 id="goalTitle">Daily goal</h2>
-            <span class="badge" id="goalBadge">0/3</span>
-          </div>
-          <div class="bar" id="goalBar" role="progressbar" aria-label="Daily goal progress" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><span id="goalFill"></span></div>
-          <ul class="goal-steps" id="goalSteps"></ul>
-        </section>
-
         <section class="card checkin" aria-labelledby="checkinTitle">
           <div class="card-head">
             <h2 id="checkinTitle">Today's check-in</h2>
@@ -327,37 +318,16 @@
               <button class="btn btn-urgent btn-sm" type="button" id="urgeAlertBtn">Open urgent help</button>
             </div>
 
+            <label class="field note-field">
+              <span class="field-label">How do I feel? <span class="optional">just write</span></span>
+              <textarea name="note" class="autosize" rows="7" maxlength="2000" placeholder="Random thoughts, how I feel right now, anything at all…"></textarea>
+              <span class="field-hint"><output id="noteCount">0</output>/2000</span>
+            </label>
+
             <details class="more">
               <summary><span class="more-ico" aria-hidden="true">🌪️</span><span class="more-title">What triggered you?</span><span class="more-count" id="triggerCount"></span></summary>
               <div class="more-body"><div class="picks" id="triggerPicks"></div>
                 <label class="field" id="triggerOtherField" hidden><span class="field-label">What was it? <span class="optional">optional</span></span><textarea name="triggerOther" class="autosize" rows="3" maxlength="1000" placeholder="Write as much as you need. This is just for you."></textarea><span class="field-hint"><span id="triggerOtherCount">0</span>/1000</span></label></div>
-            </details>
-
-            <details class="more">
-              <summary><span class="more-ico" aria-hidden="true">🌟</span><span class="more-title">Wins today</span><span class="more-count" id="winCount"></span></summary>
-              <div class="more-body"><p class="field-hint">Small things count. Pick all that you did.</p><div class="picks" id="winPicks"></div></div>
-            </details>
-
-            <details class="more">
-              <summary><span class="more-ico" aria-hidden="true">🛌</span><span class="more-title">Sleep and energy</span><span class="more-count" id="bodyCount"></span></summary>
-              <div class="more-body">
-                <fieldset class="field-group"><legend class="field-label">Hours of sleep</legend><div class="picks picks-row" id="sleepPicks"></div></fieldset>
-                <fieldset class="field-group"><legend class="field-label">Energy</legend><div class="picks picks-row" id="energyPicks"></div></fieldset>
-              </div>
-            </details>
-
-            <details class="more" open>
-              <summary><span class="more-ico" aria-hidden="true">✍️</span><span class="more-title">Reflection</span></summary>
-              <div class="more-body">
-                <label class="field"><span class="field-label">One good thing today <span class="optional">optional</span></span><textarea name="good" class="autosize" rows="2" maxlength="140" placeholder="Even something tiny"></textarea></label>
-                <label class="field"><span class="field-label">Tomorrow I will… <span class="optional">optional</span></span><textarea name="tomorrow" class="autosize" rows="2" maxlength="140" placeholder="One small plan"></textarea></label>
-                <div class="field">
-                  <span class="field-label">Note <span class="optional">optional</span></span>
-                  <div class="prompts" id="promptChips" aria-label="Writing prompts"></div>
-                  <textarea name="note" class="autosize" rows="8" maxlength="2000" placeholder="What helped today? What was hard? Write as much as you like."></textarea>
-                  <span class="field-hint"><output id="noteCount">0</output>/2000</span>
-                </div>
-              </div>
             </details>
 
             <label class="field" id="dateField">
@@ -447,6 +417,7 @@
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Zm0 6v5m0 3v.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           I want to reach out right now
         </button>
+        <button type="button" class="btn btn-ghost btn-block" id="urgeNotesBtn">📒 My urge notes</button>
       </section>
 
         <section class="card check-card" aria-labelledby="checkCardTitle">
@@ -560,7 +531,7 @@
       <section id="cs-faith" class="check-stage" hidden>
         <div class="faith">
           <i class="ray r1"></i><i class="ray r2"></i><i class="ray r3"></i>
-          <div class="breath-orb" aria-hidden="true"></div>
+          <div class="calm-orb" aria-hidden="true"></div>
           <p class="faith-text" id="thoughtText"></p>
         </div>
         <button type="button" class="btn btn-ghost btn-sm" id="thoughtEditBtn">✏️ Change this thought</button>
@@ -612,7 +583,7 @@
         <div class="wait-ring">
           <svg viewBox="0 0 160 160" aria-hidden="true"><circle class="w-track" cx="80" cy="80" r="70"/><circle class="w-fill" id="waitRing" cx="80" cy="80" r="70"/></svg>
           <div class="wait-mid"><b id="waitClock">20:00</b><span>until you ask yourself again</span></div>
-          <div class="breath-orb small" aria-hidden="true"></div>
+          <div class="calm-orb small" aria-hidden="true"></div>
         </div>
         <button type="button" class="btn btn-primary btn-lg btn-block" id="waitGame">🎮 Play something calm</button>
         <button type="button" class="btn btn-ghost btn-lg btn-block" id="waitLater">Close. I will come back</button>
@@ -635,6 +606,17 @@
         <h3 class="check-big">My notes</h3>
         <p class="muted small" id="notesEmpty">Nothing here yet. When you pause before checking on him, what you write is saved here.</p>
         <ul class="notes-list" id="notesList"></ul>
+      </section>
+      <section id="cs-urges" class="check-stage" hidden>
+        <h3 class="check-big">My urge notes</h3>
+        <p class="muted small" id="urgesEmpty">Nothing here yet. When you go through the urgent-help steps, what you write and how you felt is saved here.</p>
+        <ul class="notes-list" id="urgesList"></ul>
+      </section>
+      <section id="cs-uedit" class="check-stage" hidden>
+        <h3 class="check-big">Edit urge note</h3>
+        <label class="field" id="ueOtherField"><span class="field-label">What was pulling at me, in my words</span><textarea id="ueOther" rows="3" maxlength="500"></textarea></label>
+        <label class="field"><span class="field-label">What I did</span><textarea id="ueDid" rows="4" maxlength="800"></textarea></label>
+        <button type="button" class="btn btn-primary btn-lg btn-block" id="ueSave">Save changes</button>
       </section>
       <section id="cs-edit" class="check-stage" hidden>
         <h3 class="check-big">Edit note</h3>

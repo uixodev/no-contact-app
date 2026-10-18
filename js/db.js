@@ -91,6 +91,7 @@ export const deleteCheckin = (date) => tx('checkins', 'readwrite', (s) => promis
 
 /* ---------- Urges ridden out ---------- */
 export const saveUrge = (urge) => tx('urges', 'readwrite', (s) => promisify(s.put(urge)));
+export const deleteUrge = (at) => tx('urges', 'readwrite', (s) => promisify(s.delete(at)));
 export async function getAllUrges() {
   const all = await tx('urges', 'readonly', (s) => promisify(s.getAll()));
   return all.sort((a, b) => a.at.localeCompare(b.at));

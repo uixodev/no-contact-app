@@ -3,7 +3,8 @@
  *
  * Seven short, interactive steps inside #urgentDialog, led by the mascot:
  *   1 How strong is it?   2 Breathe   3 Ground yourself (5-4-3-2-1)   4 Think it through
- *   5 Let it out (unsent message)   6 Ride the wave (activity + timer + trusted person)   7 How do you feel now?
+ *   5 Let it out (unsent message)   6 Ride the wave (activity, what you did in your own words, timer, trusted person)   7 How do you feel now?
+ * Step 1 and step 7 also ask for a mood, and "Something else" in step 1 takes your own words. All of it is saved with the urge.
  *
  * app.js passes in what it owns (settings, the live count, toasts, saving). The wave timer lives here
  * and keeps running if the dialog is closed.
@@ -46,6 +47,19 @@ function el(tag, props = {}, ...kids) {
   return n;
 }
 
+const MOODS = [['😞', 'Very low'], ['😕', 'Low'], ['😐', 'Okay'], ['🙂', 'Good'], ['😄', 'Great']];
+/** Five mood faces; tapping the chosen one again clears it. */
+function moodRow(get, set, label) {
+  const btns = MOODS.map(([emoji, word], k) => {
+    const b = el('button', {
+      type: 'button', 'aria-label': word, title: word, 'aria-pressed': String(get() === k + 1), text: emoji,
+      onclick: () => { set(get() === k + 1 ? null : k + 1); btns.forEach((x, j) => x.setAttribute('aria-pressed', String(get() === j + 1))); },
+    });
+    return b;
+  });
+  return el('div', { class: 'rescue-mood', role: 'group', 'aria-label': label }, btns);
+}
+
 const mmss = (ms) => {
   const total = Math.max(0, Math.ceil(ms / 1000));
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
@@ -68,6 +82,7 @@ export function createRescue(ctx) {
       breath: 'idle', round: 1,
       sense: 0, left: SENSES[0][0], taps: 0, sensesDone: false,
       flipped: new Set(), released: false, activity: null,
+      other: '', did: '', moodBefore: null, moodAfter: null,
     };
   }
 
@@ -137,17 +152,30 @@ export function createRescue(ctx) {
     const chips = TAGS.map(([key, label]) => {
       const b = el('button', {
         type: 'button', class: 'chip', text: label, 'aria-pressed': String(r.tags.has(key)),
-        onclick: () => { if (r.tags.has(key)) r.tags.delete(key); else r.tags.add(key); b.setAttribute('aria-pressed', String(r.tags.has(key))); },
+        onclick: () => {
+          if (r.tags.has(key)) r.tags.delete(key); else r.tags.add(key);
+          b.setAttribute('aria-pressed', String(r.tags.has(key)));
+          if (key === 'other') { otherBox.hidden = !r.tags.has('other'); if (!otherBox.hidden) otherArea.focus({ preventScroll: true }); }
+        },
       });
       return b;
     });
+    const otherArea = el('textarea', {
+      id: 'urgeOther', rows: '3', maxlength: '500', placeholder: 'In your own words…', 'aria-label': 'What else is pulling at you, in your own words',
+      oninput: (e) => { r.other = e.target.value; },
+    });
+    otherArea.value = r.other;
+    const otherBox = el('label', { class: 'field', hidden: !r.tags.has('other') }, el('span', { class: 'field-label', text: 'What is it? (optional)' }), otherArea);
     return {
       title: 'How strong is the urge?',
       content: [
         el('div', { class: 'feel' }, el('div', { class: 'feel-head' }, out, el('span', { class: 'feel-of', text: '/ 10' })), word, range),
+        el('h3', { class: 'rescue-sub', text: 'How are you feeling?' }),
+        moodRow(() => r.moodBefore, (v) => { r.moodBefore = v; }, 'Your mood right now'),
         el('h3', { class: 'rescue-sub', text: 'What’s pulling at you?' }),
         el('p', { class: 'muted small', text: 'Optional. It helps you spot patterns later.' }),
         el('div', { class: 'chips' }, chips),
+        otherBox,
         el('button', { type: 'button', class: 'btn btn-ghost btn-sm btn-block', id: 'jumpTimer', onclick: () => go(5) }),
       ],
     };
@@ -327,12 +355,18 @@ export function createRescue(ctx) {
       type: 'button', class: 'seg', text: `${m} min`, 'data-min': String(m), 'aria-pressed': String(wait.min === m),
       onclick: () => { if (wait.state === 'running') return; wait.min = m; updateWaitUI(); },
     }));
+    const didArea = el('textarea', {
+      id: 'didText', rows: '3', maxlength: '800', placeholder: 'I went outside, called my sister, cleaned the kitchen…', 'aria-label': 'What did you do while the urge passed',
+      oninput: (e) => { r.did = e.target.value; },
+    });
+    didArea.value = r.did;
     const friend = friendRow();
     return {
       title: 'Ride the wave',
       content: [
         el('p', { class: 'muted', text: 'Urges peak and pass, usually within 20 minutes. Do something else while it does.' }),
         el('div', { class: 'chips' }, acts), tip,
+        el('label', { class: 'field' }, el('span', { class: 'field-label', text: 'What did you do? Write it in your own words' }), didArea),
         el('div', { class: 'timer-card' },
           el('div', { class: 'segs', role: 'group', 'aria-label': 'Timer length' }, lens),
           el('p', { class: 'wait-time', id: 'waitTime', text: mmss(wait.min * 60000) }),
@@ -392,6 +426,8 @@ export function createRescue(ctx) {
       content: [
         el('div', { class: 'feel' }, el('div', { class: 'feel-head' }, out, el('span', { class: 'feel-of', text: '/ 10' })), range),
         compare,
+        el('h3', { class: 'rescue-sub', text: 'And your mood now?' }),
+        moodRow(() => r.moodAfter, (v) => { r.moodAfter = v; }, 'Your mood now'),
         el('div', { class: 'btn-row' },
           el('button', { type: 'button', class: 'btn btn-ghost', id: 'anotherRound', text: '🔁 Another round', onclick: () => { r.breath = 'idle'; r.sensesDone = false; r.sense = 0; r.left = SENSES[0][0]; r.taps = 0; r.released = false; go(1); } }),
           el('button', { type: 'button', class: 'btn btn-ghost', id: 'addToCheckin', text: '📝 Add to today’s check-in', onclick: () => { close(); ctx.openCheckin(r.before); } })),
@@ -405,7 +441,8 @@ export function createRescue(ctx) {
     const rec = {
       at: new Date().toISOString(),
       before: r.before, after: r.after,
-      tags: [...r.tags], activity: r.activity,
+      tags: [...r.tags], tagOther: r.tags.has('other') ? r.other.trim() : '', activity: r.activity, did: r.did.trim(),
+      moodBefore: r.moodBefore, moodAfter: r.moodAfter,
       waitedMin: wait.state === 'done' ? wait.min : 0,
     };
     let saved = true;

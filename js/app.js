@@ -1,7 +1,7 @@
 import * as db from './db.js';
 import { createRescue } from './rescue.js';
-import { computeStats, buildCalendar, urgeStats, weekStrip, dailyGoal, insights, WEEKDAYS, splitElapsed, formatElapsed, openStreak, longestOpenStreak, toTimestamp, toKey, fromKey, MILESTONES } from './streaks.js';
-import { TAGS, WINS, SLEEP, ENERGY, PROMPTS, labelOf } from './tags.js';
+import { computeStats, buildCalendar, urgeStats, weekStrip, insights, WEEKDAYS, splitElapsed, formatElapsed, openStreak, longestOpenStreak, toTimestamp, toKey, fromKey, MILESTONES } from './streaks.js';
+import { TAGS, WINS, ENERGY, labelOf } from './tags.js';
 import { lineChart } from './charts.js';
 import { confetti } from './fx.js';
 import { createDays } from './days.js';
@@ -31,6 +31,11 @@ const checkup = createCheckup({
   get: (k) => state.settings[k],
   set: async (k, v) => { await db.setSetting(k, v); state.settings[k] = v; },
   onGames: { open: (g) => games.open(g) },
+  urges: {
+    all: () => state.urges,
+    save: async (rec) => { await db.saveUrge(rec); const i = state.urges.findIndex((u) => u.at === rec.at); if (i >= 0) state.urges[i] = rec; },
+    remove: async (at) => { await db.deleteUrge(at); state.urges = state.urges.filter((u) => u.at !== at); render(); },
+  },
 });
 const daysPlay = createDays(() => ({ days: state.days, anchorTs: state.anchorTs ?? Date.now() }));
 const rescue = createRescue({
@@ -229,7 +234,6 @@ function render() {
   renderToday(today);
   checkup.refresh();
   renderWeek(today, s);
-  renderGoal(today);
   renderInsights();
   renderCalendar(today);
   renderMilestones(s);
@@ -261,10 +265,9 @@ function renderToday(today) {
   $('#checkinDot').hidden = !!entry;
   document.querySelector('.today-card').classList.toggle('done', !!entry);
   $('#todayIco').textContent = entry ? '✓' : '📝';
-  const g = dailyGoal(entry);
   $('#todayText').textContent = !entry
     ? 'You haven’t checked in yet. It takes about ten seconds.'
-    : `${entry.status === 'held' ? 'You held No Contact today. Nice work.' : 'You logged contact today. Tomorrow is a fresh start.'} Daily goal ${g.done}/${g.total}.`;
+    : `${entry.status === 'held' ? 'You held No Contact today. Nice work.' : 'You logged contact today. Tomorrow is a fresh start.'}`;
   $('#todayBtn').textContent = entry ? 'See today’s check-in' : 'Check in now';
 }
 
@@ -286,23 +289,6 @@ function renderWeek(today, s) {
   }));
   const inApp = openStreak(state.settings.openDays, today), bestInApp = longestOpenStreak(state.settings.openDays);
   $('#weekStreak').textContent = `🔥 ${inApp} ${inApp === 1 ? 'day' : 'days'} in the app${bestInApp > inApp ? ` · best ${bestInApp}` : ''}`;
-}
-
-/** Today's daily goal: check in, 3 wins, one good thing. */
-function renderGoal(today) {
-  const g = dailyGoal(state.checkins.find((c) => c.date === today));
-  $('#goalBadge').textContent = `${g.done}/${g.total}`;
-  $('#goalBadge').classList.toggle('complete', g.complete);
-  $('#goalFill').style.width = `${(g.done / g.total) * 100}%`;
-  $('#goalBar').setAttribute('aria-valuenow', String(g.done));
-  $('#goalSteps').replaceChildren(...g.steps.map((st) => {
-    const li = document.createElement('li');
-    li.className = st.done ? 'done' : '';
-    li.innerHTML = '<span class="goal-dot" aria-hidden="true"></span><span class="goal-text"></span>';
-    li.querySelector('.goal-dot').textContent = st.done ? '✓' : '';
-    li.querySelector('.goal-text').textContent = st.label;
-    return li;
-  }));
 }
 
 /** The picked chips, text and note of an entry as HTML, shared by the "Done" card and the reading view. */
@@ -349,8 +335,6 @@ function renderInsights() {
     ins.hardestDay ? tile('🌊', 'Hardest day', wd(ins.hardestDay), `avg urge ${ins.hardestDay.avg.toFixed(1)}/10`) : tile('🌊', 'Hardest day', '—', 'needs a few more days'),
     ins.bestMoodDay ? tile('☀️', 'Best mood day', wd(ins.bestMoodDay), `avg mood ${ins.bestMoodDay.avg.toFixed(1)}/5`) : tile('☀️', 'Best mood day', '—', 'needs a few more days'),
     ins.topTrigger ? tile('🌪️', 'Top trigger', labelOf(TAGS, ins.topTrigger.key).replace(/^\S+\s/, ''), `${ins.topTrigger.count} times`) : tile('🌪️', 'Top trigger', '—', 'tag triggers to see'),
-    ins.sleepAvg != null ? tile('😴', 'Average sleep', `${ins.sleepAvg.toFixed(1)}h`, 'when you log it') : tile('😴', 'Average sleep', '—', 'log your sleep to see'),
-    ins.winsAvg != null ? tile('🌟', 'Wins per day', ins.winsAvg.toFixed(1), 'on average') : '',
   ].join('');
 
   const fmtD = (d) => fmtShort.format(fromKey(d)).replace(/^\w+,?\s/, '');
@@ -407,11 +391,6 @@ function fillForm(entry) {
   f.triggerOther.value = entry.triggerOther ?? '';
   $('#triggerOtherCount').textContent = f.triggerOther.value.length;
   syncTriggerOther();
-  setGroup('win', entry.wins ?? []);
-  setGroup('sleep', entry.sleep != null ? [String(entry.sleep)] : []);
-  setGroup('energy', entry.energy != null ? [String(entry.energy)] : []);
-  f.good.value = entry.good ?? '';
-  f.tomorrow.value = entry.tomorrow ?? '';
   $('#noteCount').textContent = f.note.value.length;
   updateMoreCounts();
   syncContactRow();
@@ -441,11 +420,9 @@ function updateMoreCounts() {
   const n = (name) => f.querySelectorAll(`input[name="${name}"]:checked`).length;
   const set = (id, count, word) => { const el = $(id); el.textContent = count ? `${count} ${word}` : ''; el.hidden = !count; };
   set('#triggerCount', n('trigger'), 'selected');
-  set('#winCount', n('win'), n('win') === 1 ? 'win' : 'wins');
-  set('#bodyCount', n('sleep') + n('energy'), 'set');
 }
 
-/** Build the chips for triggers, wins, sleep, energy and writing prompts from the shared lists. */
+/** Build the trigger chips from the shared list. */
 function buildPicks() {
   const pick = (type, name, value, text) => {
     const label = document.createElement('label'); label.className = 'pick';
@@ -454,19 +431,6 @@ function buildPicks() {
     label.append(input, span); return label;
   };
   $('#triggerPicks').replaceChildren(...TAGS.map(([v, t]) => pick('checkbox', 'trigger', v, t)));
-  $('#winPicks').replaceChildren(...WINS.map(([v, t]) => pick('checkbox', 'win', v, t)));
-  $('#sleepPicks').replaceChildren(...SLEEP.map(([v, t]) => pick('checkbox', 'sleep', v, t)));
-  $('#energyPicks').replaceChildren(...ENERGY.map(([v, emoji, t]) => pick('checkbox', 'energy', v, `${emoji} ${t}`)));
-  $('#promptChips').replaceChildren(...PROMPTS.map((text) => {
-    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'chip chip-sm', textContent: text });
-    b.addEventListener('click', () => {
-      const f = $('#checkinForm');
-      f.note.value = `${f.note.value}${f.note.value && !f.note.value.endsWith('\n') ? '\n' : ''}${text} `.slice(0, NOTE_MAX);
-      f.dataset.dirty = '1'; $('#noteCount').textContent = f.note.value.length; autosize(f.note);
-      f.note.focus(); f.note.setSelectionRange(f.note.value.length, f.note.value.length);
-    });
-    return b;
-  }));
 }
 
 /** Show the "what time was the contact?" field only when logging contact. */
@@ -556,8 +520,6 @@ function renderLog() {
     li.querySelector('.log-dot').textContent = c.status === 'held' ? '✓' : '✕';
     li.querySelector('.log-title').textContent = c.status === 'held' ? fmtShort.format(fromKey(c.date)) : title; // the green ✓ already says "held"
     const meta = [`${MOOD_EMOJI[c.mood] ?? ''} ${MOOD_WORDS[c.mood] ?? '—'}`, `Urge ${c.urge}/10`];
-    if (c.sleep != null) meta.push(`😴 ${c.sleep >= 9 ? '9h+' : c.sleep <= 4 ? '≤4h' : `${c.sleep}h`}`);
-    if (c.wins?.length) meta.push(`🌟 ${c.wins.length} ${c.wins.length === 1 ? 'win' : 'wins'}`);
     if (c.triggers?.length) meta.push(c.triggers.map((t) => triggerLabel(c, t)).join(', '));
     li.querySelector('.log-meta').textContent = meta.join(' · ');
     if (c.good) li.querySelector('.log-good').textContent = `🌟 ${c.good}`;
@@ -699,12 +661,10 @@ async function onCheckinSubmit(e) {
     time: data.get('status') === 'contact' ? String(data.get('time') || '') : '', // only contact moments need a time
     triggers: data.getAll('trigger'),
     triggerOther: data.getAll('trigger').includes('other') ? String(data.get('triggerOther') || '').trim() : '',
-    wins: data.getAll('win'),
-    sleep: data.get('sleep') ? Number(data.get('sleep')) : null,
-    energy: data.get('energy') ? Number(data.get('energy')) : null,
-    good: String(data.get('good') || '').trim(),
-    tomorrow: String(data.get('tomorrow') || '').trim(),
   };
+  // wins, sleep, energy and the two reflection lines are no longer asked for, but never wipe them from an older entry
+  const old = state.checkins.find((c) => c.date === entry.date);
+  if (old) for (const k of ['wins', 'sleep', 'energy', 'good', 'tomorrow']) if (old[k] != null) entry[k] = old[k];
   if (entry.date > toKey()) return toast("You can't check in for a future date.");
   if (entry.date < state.settings.startDate) return toast('That date is before your start date.');
   if (entry.status === 'contact') {
@@ -714,7 +674,6 @@ async function onCheckinSubmit(e) {
   }
 
   const before = computeStats(state.checkins, state.settings.startDate, toKey(), { startTime: startTimeOf(state.settings) });
-  const goalBefore = dailyGoal(state.checkins.find((c) => c.date === entry.date));
   await db.saveCheckin(entry);
   delete f.dataset.dirty;
   await load();
@@ -724,9 +683,7 @@ async function onCheckinSubmit(e) {
   render();
   const after = computeStats(state.checkins, state.settings.startDate, toKey(), { startTime: startTimeOf(state.settings) });
 
-  const goalAfter = dailyGoal(entry);
-  if (entry.date === toKey() && goalAfter.complete && !goalBefore.complete) { confetti(); toast('Daily goal complete! 3 of 3. Every second COUNTS!'); }
-  else if (entry.status === 'contact') toast('Logged. One moment doesn’t erase your progress — your longest run still counts.');
+  if (entry.status === 'contact') toast('Logged. One moment doesn’t erase your progress — your longest run still counts.');
   else if (after.milestonesReached.length > before.milestonesReached.length) toast(`Milestone reached: ${after.milestonesReached.at(-1)} days. Be proud of that.`);
   else toast('Check-in saved');
   navigator.vibrate?.(15);
@@ -872,14 +829,11 @@ function bindUI() {
   cf.addEventListener('change', (e) => {
     const { name } = e.target;
     if (name === 'status') onStatusChange();
-    if ((name === 'sleep' || name === 'energy') && e.target.checked) cf.querySelectorAll(`input[name="${name}"]`).forEach((i) => { if (i !== e.target) i.checked = false; }); // pick one, or none
     if (name === 'trigger') { syncTriggerOther(); if (!$('#triggerOtherField').hidden && e.target.value === 'other') cf.triggerOther.focus({ preventScroll: true }); }
     updateMoreCounts();
   });
   cf.note.addEventListener('input', () => { $('#noteCount').textContent = cf.note.value.length; autosize(cf.note); });
-  cf.good.addEventListener('input', () => autosize(cf.good));
   cf.triggerOther.addEventListener('input', () => { $('#triggerOtherCount').textContent = cf.triggerOther.value.length; autosize(cf.triggerOther); });
-  cf.tomorrow.addEventListener('input', () => autosize(cf.tomorrow));
   cf.addEventListener('toggle', autosizeAll, true);           // sections opening (toggle does not bubble)
   window.addEventListener('resize', autosizeAll);
   // reading a past entry

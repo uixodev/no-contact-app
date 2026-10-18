@@ -1079,8 +1079,8 @@ dialog.check[open] { display: flex; }
 .ray { position: absolute; top: -40%; left: 50%; width: 38px; height: 150%; background: linear-gradient(180deg, rgb(255 255 255 / .75), transparent 70%); transform-origin: 50% 0; z-index: 0; opacity: .6; animation: rays 7s ease-in-out infinite alternate; }
 .r1 { transform: rotate(-24deg); } .r2 { transform: rotate(0deg); animation-delay: -2s; } .r3 { transform: rotate(24deg); animation-delay: -4s; }
 @keyframes rays { from { opacity: .25; } to { opacity: .8; } }
-.breath-orb { position: relative; z-index: 1; width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #ffd25a 70%); box-shadow: 0 0 36px 10px rgb(255 205 90 / .6); animation: breathe-big 5s ease-in-out infinite; }
-.breath-orb.small { position: absolute; left: 50%; top: 50%; margin: -20px 0 0 -20px; width: 40px; height: 40px; opacity: .35; z-index: 0; }
+.calm-orb { position: relative; z-index: 1; width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #ffd25a 70%); box-shadow: 0 0 36px 10px rgb(255 205 90 / .6); animation: breathe-big 5s ease-in-out infinite; }
+.calm-orb.small { position: absolute; left: 50%; top: 50%; margin: -20px 0 0 -20px; width: 40px; height: 40px; opacity: .35; z-index: 0; }
 @keyframes breathe-big { 0%, 100% { transform: scale(.8); } 50% { transform: scale(1.25); } }
 
 .wait-ring { position: relative; width: min(100%, 260px); aspect-ratio: 1; margin-inline: auto; display: grid; place-items: center; }
@@ -1125,7 +1125,7 @@ dialog.check[open] { display: flex; }
 .spark { position: absolute; width: 10px; height: 10px; background: #fff; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: sparkle 1.6s ease-in-out infinite; pointer-events: none; opacity: 0; }
 @keyframes sparkle { 0%, 100% { opacity: 0; transform: scale(.2) rotate(0); } 50% { opacity: 1; transform: scale(1.6) rotate(90deg); } }
 .mind.dawn { background: radial-gradient(circle at 50% 55%, #fff3c4, transparent 65%), linear-gradient(180deg, #bfe3ff, #ffe9c4); }
-@media (prefers-reduced-motion: reduce) { .check-stage, .ray, .breath-orb, .shock, .ghost, .lmote, .spark, .mind.empty .mind-empty { animation: none; } .step-dots i, .thought, .w-fill { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .check-stage, .ray, .calm-orb, .shock, .ghost, .lmote, .spark, .mind.empty .mind-empty { animation: none; } .step-dots i, .thought, .w-fill { transition: none; } }
 #checkClose { margin-left: auto; }
 
 /* the bloom that opens when he is gone (replaces the star emoji) */
@@ -1158,3 +1158,10 @@ dialog.check[open] { display: flex; }
 /* press feedback: go down at once, come back up softly (the JS keeps .pressing for a minimum time) */
 .btn, .tool, .game-pick, .chip, .tab, .wk, .pick span, .choice-card, .game-nav, .pad-btn, .icon-btn { transition-property: transform, box-shadow, background-color, border-color, border-bottom-width, color; transition-duration: .16s; }
 .pressing { transition-duration: .05s !important; }
+
+/* urgent help: mood faces and the own-words boxes */
+.rescue-mood { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2); }
+.rescue-mood button { height: 54px; min-width: 0; padding: 0; font-size: 1.6rem; border-radius: var(--radius-md); border: 2px solid var(--color-border); border-bottom-width: 4px; background: var(--color-surface); filter: grayscale(.6); cursor: pointer; transition: transform .12s, filter .12s, background .12s, border-color .12s; }
+.rescue-mood button[aria-pressed='true'] { border-color: var(--green); background: var(--green-soft); filter: none; transform: translateY(-2px); }
+.rescue-mood button:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+#rescueBody .field textarea { width: 100%; }
