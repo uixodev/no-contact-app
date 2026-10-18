@@ -7,6 +7,7 @@ import { confetti } from './fx.js';
 import { createDays } from './days.js';
 import { createGames } from './games.js';
 import { createCheckup } from './checkup.js';
+import { setupPressFeedback } from './press.js';
 
 const $ = (sel) => document.querySelector(sel);
 const fmtMoment = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -98,6 +99,7 @@ init().catch((err) => {
 });
 
 async function init() {
+  setupPressFeedback();
   fillMascots();
   buildPicks();
   bindUI();
